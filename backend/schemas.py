@@ -4,7 +4,7 @@ from datetime import datetime
 from models import Role, Difficulty, AssessmentStatus, TaskType, EventType, EventActor
 
 class UserCreate(BaseModel):
-    name: str
+    full_name: str
     email: EmailStr
     password: str
     role: Role = Role.CANDIDATE
@@ -15,7 +15,7 @@ class UserLogin(BaseModel):
 
 class UserResponse(BaseModel):
     id: int
-    name: str
+    full_name: str
     email: EmailStr
     role: Role
     created_at: datetime

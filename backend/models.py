@@ -1,8 +1,8 @@
-from sqlalchemy import Column, Integer, String, Float, Enum as SQLEnum, DateTime, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Float, Enum as SQLEnum, DateTime, ForeignKey, Text, Boolean, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from database import Base
 import enum
+from database import Base
 
 class Role(str, enum.Enum):
     ADMIN = "ADMIN"
@@ -17,6 +17,7 @@ class Difficulty(str, enum.Enum):
 class AssessmentStatus(str, enum.Enum):
     DRAFT = "DRAFT"
     PUBLISHED = "PUBLISHED"
+    CLOSED = "CLOSED"
     ARCHIVED = "ARCHIVED"
 
 class TaskType(str, enum.Enum):
@@ -26,7 +27,42 @@ class TaskType(str, enum.Enum):
     DEBUGGING = "DEBUGGING"
     CODE_REVIEW = "CODE_REVIEW"
 
+class SessionStatus(str, enum.Enum):
+    NOT_STARTED = "NOT_STARTED"
+    ACTIVE = "ACTIVE"
+    PAUSED = "PAUSED"
+    SUBMITTED = "SUBMITTED"
+    EXPIRED = "EXPIRED"
+    EVALUATING = "EVALUATING"
+    COMPLETED = "COMPLETED"
+
+class WorkspaceStatus(str, enum.Enum):
+    CREATED = "CREATED"
+    ACTIVE = "ACTIVE"
+    LOCKED = "LOCKED"
+    DESTROYED = "DESTROYED"
+
+class AgentSessionStatus(str, enum.Enum):
+    ACTIVE = "ACTIVE"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    STOPPED = "STOPPED"
+
+class AgentRole(str, enum.Enum):
+    SYSTEM = "SYSTEM"
+    USER = "USER"
+    ASSISTANT = "ASSISTANT"
+    TOOL = "TOOL"
+
+class ToolCallStatus(str, enum.Enum):
+    REQUESTED = "REQUESTED"
+    RUNNING = "RUNNING"
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
+    REJECTED = "REJECTED"
+
 class EventType(str, enum.Enum):
+    SESSION_STARTED = "SESSION_STARTED"
     FILE_OPENED = "FILE_OPENED"
     FILE_EDITED = "FILE_EDITED"
     FILE_CREATED = "FILE_CREATED"
@@ -38,79 +74,34 @@ class EventType(str, enum.Enum):
     TEST_FAILED = "TEST_FAILED"
     TEST_PASSED = "TEST_PASSED"
     CODE_CHANGE = "CODE_CHANGE"
+    DEBUGGING = "DEBUGGING"
+    GIT_COMMIT = "GIT_COMMIT"
     SUBMITTED = "SUBMITTED"
+    SESSION_EXPIRED = "SESSION_EXPIRED"
 
 class EventActor(str, enum.Enum):
     CANDIDATE = "CANDIDATE"
-    AGENT = "AGENT"
+    AI = "AI"
     SYSTEM = "SYSTEM"
-
-class AgentRole(str, enum.Enum):
-    USER = "USER"
-    AGENT = "AGENT"
-    TOOL = "TOOL"
-
-class User(Base):
-    __tablename__ = "users"
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    email = Column(String, unique=True, index=True, nullable=False)
-    password_hash = Column(String, nullable=False)
-    role = Column(SQLEnum(Role), default=Role.CANDIDATE, nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-
-    assessments_created = relationship("Assessment", back_populates="creator")
-
-class Assessment(Base):
-    __tablename__ = "assessments"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, nullable=False)
-    description = Column(Text, nullable=True)
-    duration_minutes = Column(Integer, default=60)
-    difficulty = Column(SQLEnum(Difficulty), default=Difficulty.INTERMEDIATE, nullable=False)
-    status = Column(SQLEnum(AssessmentStatus), default=AssessmentStatus.DRAFT, nullable=False)
-    created_by = Column(Integer, ForeignKey("users.id"))
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-
-    creator = relationship("User", back_populates="assessments_created")
-    tasks = relationship("Task", back_populates="assessment", cascade="all, delete-orphan")
-
-class Task(Base):
-    __tablename__ = "tasks"
-
-    id = Column(Integer, primary_key=True, index=True)
-    assessment_id = Column(Integer, ForeignKey("assessments.id"), nullable=False)
-    title = Column(String, nullable=False)
-    description = Column(Text, nullable=True)
-    repository_url = Column(String, nullable=True)
-    starter_repository = Column(String, nullable=True)
-    task_type = Column(SQLEnum(TaskType), default=TaskType.FEATURE, nullable=False)
-    constraints = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-
-    assessment = relationship("Assessment", back_populates="tasks")
-
-class SessionStatus(str, enum.Enum):
-    IN_PROGRESS = "IN_PROGRESS"
-    SUBMITTED = "SUBMITTED"
+    ASSESSOR = "ASSESSOR"
 
 class EvalStatus(str, enum.Enum):
-    PENDING = "PENDING"
+    QUEUED = "QUEUED"
     RUNNING = "RUNNING"
+    PASSED = "PASSED"
+    FAILED = "FAILED"
     COMPLETED = "COMPLETED"
 
-class TestStatus(str, enum.Enum):
-    PASS = "PASS"
-    FAIL = "FAIL"
-    ERROR = "ERROR"
+class TestVisibility(str, enum.Enum):
+    VISIBLE = "VISIBLE"
+    HIDDEN = "HIDDEN"
 
-class TestCategory(str, enum.Enum):
-    FUNCTIONAL = "FUNCTIONAL"
-    EDGE_CASE = "EDGE_CASE"
-    REGRESSION = "REGRESSION"
-    CODE_QUALITY = "CODE_QUALITY"
+class TestStatus(str, enum.Enum):
+    PASSED = "PASSED"
+    FAILED = "FAILED"
+    ERROR = "ERROR"
+    TIMEOUT = "TIMEOUT"
+    SKIPPED = "SKIPPED"
 
 class EvidenceType(str, enum.Enum):
     REQUIREMENT_INTERACTION = "REQUIREMENT_INTERACTION"
@@ -122,49 +113,170 @@ class EvidenceType(str, enum.Enum):
     ITERATION = "ITERATION"
     FINAL_SUBMISSION = "FINAL_SUBMISSION"
 
+class ReportGeneratedBy(str, enum.Enum):
+    SYSTEM = "SYSTEM"
+    ASSESSMENT_AI = "ASSESSMENT_AI"
+    ASSESSOR = "ASSESSOR"
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    password_hash = Column(String, nullable=False)
+    full_name = Column(String, nullable=False)
+    role = Column(SQLEnum(Role), index=True, default=Role.CANDIDATE, nullable=False)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    created_assessments = relationship("Assessment", back_populates="creator")
+    candidate_sessions = relationship("AssessmentSession", back_populates="candidate")
+
+class Assessment(Base):
+    __tablename__ = "assessments"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    duration_minutes = Column(Integer, default=60)
+    difficulty = Column(SQLEnum(Difficulty), default=Difficulty.INTERMEDIATE, nullable=False)
+    status = Column(SQLEnum(AssessmentStatus), index=True, default=AssessmentStatus.DRAFT, nullable=False)
+    created_by = Column(Integer, ForeignKey("users.id"), index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    creator = relationship("User", back_populates="created_assessments")
+    tasks = relationship("Task", back_populates="assessment", cascade="all, delete-orphan")
+    sessions = relationship("AssessmentSession", back_populates="assessment", cascade="all, delete-orphan")
+
+class Task(Base):
+    __tablename__ = "tasks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    assessment_id = Column(Integer, ForeignKey("assessments.id"), index=True, nullable=False)
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    repository_url = Column(String, nullable=True)
+    starter_repository = Column(String, nullable=True)
+    task_type = Column(SQLEnum(TaskType), index=True, default=TaskType.FEATURE, nullable=False)
+    constraints = Column(JSON, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    assessment = relationship("Assessment", back_populates="tasks")
+    test_cases = relationship("TestCase", back_populates="task", cascade="all, delete-orphan")
+    sessions = relationship("AssessmentSession", back_populates="task", cascade="all, delete-orphan")
+
 class AssessmentSession(Base):
     __tablename__ = "assessment_sessions"
 
     id = Column(Integer, primary_key=True, index=True)
+    assessment_id = Column(Integer, ForeignKey("assessments.id"), index=True, nullable=False)
+    candidate_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=False)
     task_id = Column(Integer, ForeignKey("tasks.id"), nullable=False)
-    candidate_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    status = Column(SQLEnum(SessionStatus), default=SessionStatus.IN_PROGRESS, nullable=False)
+    status = Column(SQLEnum(SessionStatus), index=True, default=SessionStatus.NOT_STARTED, nullable=False)
+    started_at = Column(DateTime(timezone=True), index=True, nullable=True)
+    submitted_at = Column(DateTime(timezone=True), nullable=True)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    events = relationship("AssessmentEvent", back_populates="session", cascade="all, delete-orphan")
-    messages = relationship("AgentMessage", back_populates="session", cascade="all, delete-orphan")
-    tool_calls = relationship("AgentToolCall", back_populates="session", cascade="all, delete-orphan")
-    evaluations = relationship("EvaluationRun", back_populates="session", cascade="all, delete-orphan")
-    evidence = relationship("Evidence", back_populates="session", cascade="all, delete-orphan")
-    ai_summary = relationship("AIAssessmentSummary", back_populates="session", uselist=False, cascade="all, delete-orphan")
+    assessment = relationship("Assessment", back_populates="sessions")
+    candidate = relationship("User", back_populates="candidate_sessions")
+    task = relationship("Task", back_populates="sessions")
+    workspace = relationship("Workspace", back_populates="assessment_session", uselist=False, cascade="all, delete-orphan")
+    agent_sessions = relationship("AgentSession", back_populates="assessment_session", cascade="all, delete-orphan")
+    events = relationship("AssessmentEvent", back_populates="assessment_session", cascade="all, delete-orphan")
+    git_evidence = relationship("GitEvidence", back_populates="assessment_session", cascade="all, delete-orphan")
+    evaluation_runs = relationship("EvaluationRun", back_populates="assessment_session", cascade="all, delete-orphan")
+    evidence = relationship("Evidence", back_populates="assessment_session", cascade="all, delete-orphan")
+    report = relationship("AssessmentReport", back_populates="assessment_session", uselist=False, cascade="all, delete-orphan")
 
-class AIAssessmentSummary(Base):
-    __tablename__ = "ai_assessment_summaries"
+class Workspace(Base):
+    __tablename__ = "workspaces"
 
     id = Column(Integer, primary_key=True, index=True)
-    session_id = Column(Integer, ForeignKey("assessment_sessions.id"), nullable=False, unique=True)
-    task_summary = Column(Text, nullable=False)
-    implementation_summary = Column(Text, nullable=False)
-    testing_summary = Column(Text, nullable=False)
-    ai_usage_summary = Column(Text, nullable=False)
-    debugging_summary = Column(Text, nullable=False)
-    evidence_points = Column(String, nullable=False) # Storing JSON array string
+    assessment_session_id = Column(Integer, ForeignKey("assessment_sessions.id"), nullable=False, unique=True)
+    workspace_path = Column(String, nullable=False)
+    repository_snapshot = Column(String, nullable=True)
+    status = Column(SQLEnum(WorkspaceStatus), default=WorkspaceStatus.CREATED, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    session = relationship("AssessmentSession", back_populates="ai_summary")
+    assessment_session = relationship("AssessmentSession", back_populates="workspace")
 
-class Evidence(Base):
-    __tablename__ = "evidence"
+class AgentSession(Base):
+    __tablename__ = "agent_sessions"
 
     id = Column(Integer, primary_key=True, index=True)
-    session_id = Column(Integer, ForeignKey("assessment_sessions.id"), nullable=False)
-    evidence_type = Column(SQLEnum(EvidenceType), nullable=False)
-    source_event_ids = Column(String, nullable=True) # Storing JSON array string
-    description = Column(Text, nullable=False)
-    confidence = Column(Float, nullable=True)
-    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+    assessment_session_id = Column(Integer, ForeignKey("assessment_sessions.id"), index=True, nullable=False)
+    model_name = Column(String, nullable=False)
+    status = Column(SQLEnum(AgentSessionStatus), default=AgentSessionStatus.ACTIVE, nullable=False)
+    started_at = Column(DateTime(timezone=True), server_default=func.now())
+    ended_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    session = relationship("AssessmentSession", back_populates="evidence")
+    assessment_session = relationship("AssessmentSession", back_populates="agent_sessions")
+    messages = relationship("AgentMessage", back_populates="agent_session", cascade="all, delete-orphan")
+    tool_calls = relationship("AgentToolCall", back_populates="agent_session", cascade="all, delete-orphan")
+
+class AgentMessage(Base):
+    __tablename__ = "agent_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    agent_session_id = Column(Integer, ForeignKey("agent_sessions.id"), index=True, nullable=False)
+    role = Column(SQLEnum(AgentRole), nullable=False)
+    content = Column(Text, nullable=True)
+    sequence_number = Column(Integer, index=True, nullable=False, default=1)
+    created_at = Column(DateTime(timezone=True), index=True, server_default=func.now())
+
+    agent_session = relationship("AgentSession", back_populates="messages")
+    tool_calls = relationship("AgentToolCall", back_populates="message")
+
+class AgentToolCall(Base):
+    __tablename__ = "agent_tool_calls"
+
+    id = Column(Integer, primary_key=True, index=True)
+    agent_session_id = Column(Integer, ForeignKey("agent_sessions.id"), index=True, nullable=False)
+    message_id = Column(Integer, ForeignKey("agent_messages.id"), nullable=True)
+    tool_name = Column(String, index=True, nullable=False)
+    arguments = Column(JSON, nullable=True)
+    result = Column(JSON, nullable=True)
+    status = Column(SQLEnum(ToolCallStatus), index=True, default=ToolCallStatus.REQUESTED, nullable=False)
+    started_at = Column(DateTime(timezone=True), server_default=func.now())
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+
+    agent_session = relationship("AgentSession", back_populates="tool_calls")
+    message = relationship("AgentMessage", back_populates="tool_calls")
+
+class AssessmentEvent(Base):
+    __tablename__ = "assessment_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    assessment_session_id = Column(Integer, ForeignKey("assessment_sessions.id"), index=True, nullable=False)
+    event_type = Column(SQLEnum(EventType), index=True, nullable=False)
+    actor = Column(SQLEnum(EventActor), index=True, nullable=False)
+    metadata_json = Column(JSON, nullable=True) 
+    timestamp = Column(DateTime(timezone=True), index=True, server_default=func.now())
+    
+    assessment_session = relationship("AssessmentSession", back_populates="events")
+
+class GitEvidence(Base):
+    __tablename__ = "git_evidence"
+
+    id = Column(Integer, primary_key=True, index=True)
+    assessment_session_id = Column(Integer, ForeignKey("assessment_sessions.id"), index=True, nullable=False)
+    commit_hash = Column(String, index=True, nullable=False)
+    branch_name = Column(String, nullable=True)
+    commit_message = Column(String, nullable=True)
+    changed_files = Column(JSON, nullable=True)
+    additions = Column(Integer, default=0)
+    deletions = Column(Integer, default=0)
+    diff_reference = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), index=True, server_default=func.now())
+
+    assessment_session = relationship("AssessmentSession", back_populates="git_evidence")
 
 class TestCase(Base):
     __tablename__ = "test_cases"
@@ -172,71 +284,83 @@ class TestCase(Base):
     id = Column(Integer, primary_key=True, index=True)
     task_id = Column(Integer, ForeignKey("tasks.id"), nullable=False)
     name = Column(String, nullable=False)
-    category = Column(SQLEnum(TestCategory), nullable=False)
-    is_hidden = Column(Integer, default=0) # boolean 0/1
+    description = Column(Text, nullable=True)
+    visibility = Column(SQLEnum(TestVisibility), default=TestVisibility.VISIBLE, nullable=False)
+    weight = Column(Integer, default=1)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    task = relationship("Task", back_populates="test_cases")
 
 class EvaluationRun(Base):
     __tablename__ = "evaluation_runs"
 
     id = Column(Integer, primary_key=True, index=True)
-    session_id = Column(Integer, ForeignKey("assessment_sessions.id"), nullable=False)
-    status = Column(SQLEnum(EvalStatus), default=EvalStatus.PENDING, nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    assessment_session_id = Column(Integer, ForeignKey("assessment_sessions.id"), index=True, nullable=False)
+    status = Column(SQLEnum(EvalStatus), default=EvalStatus.QUEUED, nullable=False)
+    started_at = Column(DateTime(timezone=True), nullable=True)
     completed_at = Column(DateTime(timezone=True), nullable=True)
+    total_tests = Column(Integer, default=0)
+    passed_tests = Column(Integer, default=0)
+    failed_tests = Column(Integer, default=0)
+    score = Column(Float, nullable=True)
+    evaluation_metadata = Column(JSON, nullable=True)
 
-    session = relationship("AssessmentSession", back_populates="evaluations")
-    results = relationship("TestResult", back_populates="run", cascade="all, delete-orphan")
+    assessment_session = relationship("AssessmentSession", back_populates="evaluation_runs")
+    test_results = relationship("TestResult", back_populates="evaluation_run", cascade="all, delete-orphan")
 
 class TestResult(Base):
     __tablename__ = "test_results"
 
     id = Column(Integer, primary_key=True, index=True)
-    evaluation_run_id = Column(Integer, ForeignKey("evaluation_runs.id"), nullable=False)
-    test_case_id = Column(Integer, ForeignKey("test_cases.id"), nullable=False)
-    status = Column(SQLEnum(TestStatus), nullable=False)
-    execution_time = Column(Float, nullable=True)
-    output_summary = Column(Text, nullable=True)
-    failure_summary = Column(Text, nullable=True)
+    evaluation_run_id = Column(Integer, ForeignKey("evaluation_runs.id"), index=True, nullable=False)
+    test_case_id = Column(Integer, ForeignKey("test_cases.id"), index=True, nullable=False)
+    status = Column(SQLEnum(TestStatus), index=True, nullable=False)
+    execution_time_ms = Column(Integer, nullable=True)
+    output = Column(Text, nullable=True)
+    error = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    run = relationship("EvaluationRun", back_populates="results")
+    evaluation_run = relationship("EvaluationRun", back_populates="test_results")
     test_case = relationship("TestCase")
 
-class AssessmentEvent(Base):
-    __tablename__ = "assessment_events"
+class Evidence(Base):
+    __tablename__ = "evidence"
 
     id = Column(Integer, primary_key=True, index=True)
     assessment_session_id = Column(Integer, ForeignKey("assessment_sessions.id"), nullable=False)
-    event_type = Column(SQLEnum(EventType), nullable=False)
-    actor = Column(SQLEnum(EventActor), nullable=False)
-    metadata_json = Column(String, nullable=True) # Storing JSON as string
-    timestamp = Column(DateTime(timezone=True), server_default=func.now())
-    
-    session = relationship("AssessmentSession", back_populates="events")
-
-class AgentMessage(Base):
-    __tablename__ = "agent_messages"
-
-    id = Column(Integer, primary_key=True, index=True)
-    session_id = Column(Integer, ForeignKey("assessment_sessions.id"), nullable=False)
-    role = Column(SQLEnum(AgentRole), nullable=False)
-    content = Column(Text, nullable=True)
+    evidence_type = Column(SQLEnum(EvidenceType), nullable=False)
+    description = Column(Text, nullable=False)
+    source_event_ids = Column(JSON, nullable=True) 
+    confidence = Column(Float, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    session = relationship("AssessmentSession", back_populates="messages")
-    tool_calls = relationship("AgentToolCall", back_populates="message")
+    assessment_session = relationship("AssessmentSession", back_populates="evidence")
 
-class AgentToolCall(Base):
-    __tablename__ = "agent_tool_calls"
+class AssessmentReport(Base):
+    __tablename__ = "assessment_reports"
 
     id = Column(Integer, primary_key=True, index=True)
-    session_id = Column(Integer, ForeignKey("assessment_sessions.id"), nullable=False)
-    message_id = Column(Integer, ForeignKey("agent_messages.id"), nullable=True)
-    tool_name = Column(String, nullable=False)
-    arguments = Column(String, nullable=True) # JSON string
-    result = Column(String, nullable=True)    # JSON string
-    success = Column(Integer, default=1)      # 1/0 for boolean in SQLite
-    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+    assessment_session_id = Column(Integer, ForeignKey("assessment_sessions.id"), nullable=False, unique=True)
+    task_summary = Column(Text, nullable=True)
+    implementation_summary = Column(Text, nullable=True)
+    testing_summary = Column(Text, nullable=True)
+    ai_usage_summary = Column(Text, nullable=True)
+    debugging_summary = Column(Text, nullable=True)
+    generated_at = Column(DateTime(timezone=True), server_default=func.now())
+    generated_by = Column(SQLEnum(ReportGeneratedBy), default=ReportGeneratedBy.SYSTEM, nullable=False)
+    version = Column(Integer, default=1)
 
-    session = relationship("AssessmentSession", back_populates="tool_calls")
-    message = relationship("AgentMessage", back_populates="tool_calls")
+    assessment_session = relationship("AssessmentSession", back_populates="report")
+    report_evidence = relationship("ReportEvidence", back_populates="report", cascade="all, delete-orphan")
 
+class ReportEvidence(Base):
+    __tablename__ = "report_evidence"
+
+    id = Column(Integer, primary_key=True, index=True)
+    report_id = Column(Integer, ForeignKey("assessment_reports.id"), nullable=False)
+    evidence_id = Column(Integer, ForeignKey("evidence.id"), nullable=False)
+    claim = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    report = relationship("AssessmentReport", back_populates="report_evidence")
+    evidence = relationship("Evidence")

@@ -15,7 +15,7 @@ import models
 # access to the values within the .ini file in use.
 config = context.config
 
-db_url = os.getenv("DATABASE_URL", "postgresql://user:password@localhost:5432/oaiaw")
+db_url = os.getenv("DATABASE_URL", "postgresql+psycopg://postgres:Dinesh30112006@localhost:5432/oaiaw")
 config.set_main_option("sqlalchemy.url", db_url)
 
 # Interpret the config file for Python logging.
