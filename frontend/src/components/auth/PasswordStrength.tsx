@@ -1,5 +1,6 @@
-﻿import React from 'react';
-import { Check, CircleAlert } from 'lucide-react';
+'use client';
+import React from 'react';
+import { CheckCircle2, Circle } from 'lucide-react';
 
 export function PasswordStrength({ password }: { password: string }) {
   const hasLength = password.length >= 8;
@@ -13,13 +14,13 @@ export function PasswordStrength({ password }: { password: string }) {
   ];
 
   return (
-    <div className="mt-2 space-y-1">
+    <div className="mt-2 space-y-2">
       {rules.map((rule, i) => (
-        <div key={i} className="flex items-center text-xs">
+        <div key={i} className="flex items-center text-sm">
           {rule.met ? (
-            <Check size={14} className="text-green-500 mr-2" />
+            <CheckCircle2 className="h-3.5 w-3.5 text-green-500 mr-2" />
           ) : (
-            <CircleAlert size={14} className="text-muted-foreground mr-2" />
+            <Circle className="h-3.5 w-3.5 text-muted-foreground mr-2" />
           )}
           <span className={rule.met ? "text-foreground" : "text-muted-foreground"}>
             {rule.label}

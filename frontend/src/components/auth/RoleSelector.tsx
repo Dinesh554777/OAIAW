@@ -1,5 +1,6 @@
+'use client';
 import React from 'react';
-import { Code2, ClipboardCheck, ShieldCheck, Check } from 'lucide-react';
+import { UserRound, ClipboardCheck, ShieldCheck, Check } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 
 export type Role = 'CANDIDATE' | 'ASSESSOR' | 'ADMIN';
@@ -15,8 +16,8 @@ export function RoleSelector({ selectedRole, onSelectRole, layout = 'horizontal'
     {
       id: 'CANDIDATE' as Role,
       label: 'Candidate',
-      description: 'Take technical assessments & build with AI',
-      icon: Code2,
+      description: 'Complete realistic software engineering assessments with AI assistance.',
+      icon: UserRound,
     },
     {
       id: 'ASSESSOR' as Role,
