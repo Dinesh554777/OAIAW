@@ -1,6 +1,10 @@
 import Cookies from 'js-cookie';
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
+if (!API_BASE_URL) {
+  console.warn("NEXT_PUBLIC_API_URL is missing. Please set it in your .env file.");
+}
 
 export async function fetchApi(endpoint: string, options: RequestInit = {}) {
   const token = Cookies.get('token');

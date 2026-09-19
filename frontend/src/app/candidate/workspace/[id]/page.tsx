@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { API_BASE_URL } from '@/lib/api';
 import { Editor } from '@monaco-editor/react';
 import { 
   Play, 
@@ -48,7 +49,7 @@ export default function CandidateWorkspace() {
     const fetchFiles = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch(`http://localhost:8000/workspace/${taskId}/files`, {
+        const res = await fetch(`${API_BASE_URL}/workspace/${taskId}/files`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.ok) {
@@ -79,7 +80,7 @@ export default function CandidateWorkspace() {
     
     const initSession = async () => {
         const token = localStorage.getItem('token');
-        await fetch(`http://localhost:8000/agent/session`, {
+        await fetch(`${API_BASE_URL}/agent/session`, {
             method: 'POST',
             headers: { 
                 'Authorization': `Bearer ${token}`,
@@ -117,7 +118,7 @@ export default function CandidateWorkspace() {
     setIsSaving(true);
     try {
       const token = localStorage.getItem('token');
-      await fetch(`http://localhost:8000/workspace/${taskId}/save`, {
+      await fetch(`${API_BASE_URL}/workspace/${taskId}/save`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -140,7 +141,7 @@ export default function CandidateWorkspace() {
     setTerminalOutput(prev => prev + '\n> npm run test\nRunning tests...\n');
     try {
       const token = localStorage.getItem('token');
-      await fetch(`http://localhost:8000/workspace/${taskId}/run-tests`, {
+      await fetch(`${API_BASE_URL}/workspace/${taskId}/run-tests`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -166,14 +167,14 @@ export default function CandidateWorkspace() {
       const token = localStorage.getItem('token');
       // Fetch the actual session id, for prototype we can fetch it again or store it
       // Let's assume we can get it from /agent/session
-      const sessionRes = await fetch(`http://localhost:8000/agent/session`, {
+      const sessionRes = await fetch(`${API_BASE_URL}/agent/session`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ task_id: parseInt(taskId) })
       });
       const sessionData = await sessionRes.json();
 
-      const res = await fetch(`http://localhost:8000/agent/chat`, {
+      const res = await fetch(`${API_BASE_URL}/agent/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

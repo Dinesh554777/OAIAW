@@ -3,11 +3,13 @@ from database import engine, Base
 from routers import auth, assessments, tasks, workspace, agent, sessions, evaluation, report, security
 from fastapi.middleware.cors import CORSMiddleware
 
+from config import settings
+
 app = FastAPI(title="OAIAW Backend", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[origin.strip() for origin in settings.CORS_ORIGINS.split(",")],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
