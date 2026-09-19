@@ -9,6 +9,7 @@ import FileExplorer from '@/components/workspace/FileExplorer';
 import CodeEditor from '@/components/workspace/CodeEditor';
 import AgentChat from '@/components/workspace/AgentChat';
 import TerminalPanel from '@/components/workspace/TerminalPanel';
+import ControlledEnvironmentPanel from '@/components/workspace/ControlledEnvironmentPanel';
 
 export default function Workspace() {
   const params = useParams();
@@ -91,17 +92,19 @@ export default function Workspace() {
       <div className="flex-1 flex overflow-hidden">
         
         {/* Left Panel: File Explorer */}
-        <div className="w-64 flex-shrink-0">
-          <FileExplorer 
-            files={files} 
-            activeFile={activeFile} 
-            onFileSelect={setActiveFile} 
-          />
+        <div className="w-64 flex-shrink-0 border-r border-border bg-surface flex flex-col">
+          <div className="flex-1 overflow-hidden">
+            <FileExplorer 
+              files={files} 
+              activeFile={activeFile} 
+              onFileSelect={setActiveFile} 
+            />
+          </div>
         </div>
 
         {/* Center Panel: Editor + Terminal */}
-        <div className="flex-1 flex flex-col min-w-0">
-          <div className="flex-1 relative">
+        <div className="flex-1 flex flex-col min-w-0 bg-background">
+          <div className="flex-1 relative border-b border-border shadow-sm">
             {activeFile ? (
               <CodeEditor 
                 activeFile={activeFile}
@@ -115,17 +118,21 @@ export default function Workspace() {
               </div>
             )}
           </div>
-          <div className="h-72 flex-shrink-0 relative">
+          <div className="h-72 flex-shrink-0 relative bg-surface-elevated">
             <TerminalPanel onRunTests={handleRunTests} />
           </div>
         </div>
 
-        {/* Right Panel: AI Agent */}
-        <div className="w-96 flex-shrink-0">
-          <AgentChat onSendMessage={handleAgentChat} />
+        {/* Right Panel: AI Agent & Env Info */}
+        <div className="w-96 flex-shrink-0 flex flex-col border-l border-border bg-surface shadow-[-4px_0_15px_rgba(0,0,0,0.1)]">
+          <ControlledEnvironmentPanel />
+          <div className="flex-1 overflow-hidden">
+             <AgentChat onSendMessage={handleAgentChat} />
+          </div>
         </div>
 
       </div>
     </div>
   );
 }
+

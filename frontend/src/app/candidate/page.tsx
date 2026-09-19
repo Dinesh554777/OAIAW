@@ -1,41 +1,110 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { fetchApi } from '@/lib/api';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/common/Card';
+import { Button } from '@/components/common/Button';
+import { Badge } from '@/components/common/Badge';
+import { AppShell } from '@/components/layout/AppShell';
+import { Clock, Code2, ArrowRight, Play, Activity } from 'lucide-react';
 
 export default function CandidateDashboard() {
   const [assessments, setAssessments] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchApi('/assessments').then(setAssessments).catch(console.error);
+    fetchApi('/assessments')
+      .then(res => {
+        setAssessments(res);
+        setLoading(false);
+      })
+      .catch(e => {
+        console.error(e);
+        setLoading(false);
+      });
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-4xl mx-auto bg-white rounded shadow-md p-6">
-        <h1 className="text-3xl font-bold mb-4">Candidate Dashboard</h1>
-        <p className="text-gray-700 mb-8">Welcome to the OAIAW candidate workspace. Here are your available assessments.</p>
+    <AppShell userRole="CANDIDATE">
+      <div className="py-6 space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight mb-2 flex items-center gap-3">
+            Good afternoon
+          </h1>
+          <p className="text-muted-foreground">Here are your engineering assessments.</p>
+        </div>
         
-        <h2 className="text-2xl font-semibold mb-4">Available Assessments</h2>
-        {assessments.length === 0 ? (
-          <p className="text-gray-500">No assessments are currently available.</p>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {assessments.map((a: any) => (
-              <div key={a.id} className="border rounded p-6 bg-white shadow-sm hover:shadow-md transition-shadow">
-                <h3 className="text-xl font-bold mb-2">{a.title}</h3>
-                <p className="text-gray-600 mb-4 line-clamp-2">{a.description}</p>
-                <div className="flex justify-between items-center text-sm text-gray-500 mb-4">
-                  <span>{a.duration_minutes} mins</span>
-                  <span className="bg-gray-100 px-2 py-1 rounded">{a.difficulty}</span>
-                </div>
-                <button className="w-full bg-blue-600 text-white py-2 rounded font-semibold hover:bg-blue-700">
-                  Start Assessment
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+           <Card className="bg-surface/50 border-primary/20 shadow-[0_0_15px_rgba(255,255,255,0.03)]">
+              <CardHeader className="pb-2">
+                 <div className="text-sm font-medium text-muted-foreground mb-1">Status</div>
+                 <CardTitle className="text-2xl text-foreground">Active Candidate</CardTitle>
+              </CardHeader>
+           </Card>
+           <Card className="bg-surface/50">
+              <CardHeader className="pb-2">
+                 <div className="text-sm font-medium text-muted-foreground mb-1">Completed</div>
+                 <CardTitle className="text-2xl text-foreground">0</CardTitle>
+              </CardHeader>
+           </Card>
+           <Card className="bg-surface/50">
+              <CardHeader className="pb-2">
+                 <div className="text-sm font-medium text-muted-foreground mb-1">AI Interactions</div>
+                 <CardTitle className="text-2xl text-foreground">0</CardTitle>
+              </CardHeader>
+           </Card>
+        </div>
+
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold tracking-tight">Your Assessments</h2>
+          
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="h-48 animate-pulse bg-surface/50"></Card>
+              <Card className="h-48 animate-pulse bg-surface/50"></Card>
+            </div>
+          ) : assessments.length === 0 ? (
+            <Card className="bg-surface-elevated border-dashed border-border p-12 flex flex-col items-center justify-center text-center">
+              <Code2 size={32} className="text-muted-foreground mb-4 opacity-50" />
+              <h3 className="text-lg font-medium text-foreground mb-2">No assessments assigned</h3>
+              <p className="text-sm text-muted-foreground">You currently have no pending engineering tasks.</p>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {assessments.map((a: any) => (
+                <Card key={a.id} className="group relative overflow-hidden border-border hover:border-primary/50 transition-all flex flex-col">
+                  {/* Subtle gradient effect on hover */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+                  
+                  <CardHeader>
+                    <div className="flex justify-between items-start mb-2">
+                      <Badge variant={a.difficulty === 'HARD' ? 'destructive' : a.difficulty === 'MEDIUM' ? 'warning' : 'success'}>
+                        {a.difficulty}
+                      </Badge>
+                      <Badge variant="outline" className="font-mono gap-1">
+                        <Clock size={12} />
+                        {a.duration_minutes}m
+                      </Badge>
+                    </div>
+                    <CardTitle className="text-xl text-foreground mb-2">{a.title}</CardTitle>
+                    <p className="text-sm text-muted-foreground line-clamp-2">{a.description}</p>
+                  </CardHeader>
+                  
+                  <CardContent className="mt-auto pt-4 flex items-center justify-between border-t border-border/50">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                       <Activity size={14} className="text-ai" />
+                       <span>AI Assistant Enabled</span>
+                    </div>
+                    <Button variant="default" className="gap-2 group-hover:bg-primary group-hover:text-primary-foreground transition-all">
+                      Start Environment
+                      <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </AppShell>
   );
 }
