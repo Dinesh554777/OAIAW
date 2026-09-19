@@ -33,6 +33,11 @@ class EventType(str, enum.Enum):
     TEST_RUN = "TEST_RUN"
     AGENT_MESSAGE = "AGENT_MESSAGE"
 
+class AgentRole(str, enum.Enum):
+    USER = "USER"
+    AGENT = "AGENT"
+    TOOL = "TOOL"
+
 class User(Base):
     __tablename__ = "users"
 
@@ -84,4 +89,42 @@ class WorkspaceEvent(Base):
     event_type = Column(SQLEnum(EventType), nullable=False)
     payload = Column(String, nullable=True) # Storing JSON as string for simplicity across DBs
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class AgentSession(Base):
+    __tablename__ = "agent_sessions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    task_id = Column(Integer, ForeignKey("tasks.id"), nullable=False)
+    candidate_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    messages = relationship("AgentMessage", back_populates="session", cascade="all, delete-orphan")
+    tool_calls = relationship("AgentToolCall", back_populates="session", cascade="all, delete-orphan")
+
+class AgentMessage(Base):
+    __tablename__ = "agent_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(Integer, ForeignKey("agent_sessions.id"), nullable=False)
+    role = Column(SQLEnum(AgentRole), nullable=False)
+    content = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    session = relationship("AgentSession", back_populates="messages")
+    tool_calls = relationship("AgentToolCall", back_populates="message")
+
+class AgentToolCall(Base):
+    __tablename__ = "agent_tool_calls"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(Integer, ForeignKey("agent_sessions.id"), nullable=False)
+    message_id = Column(Integer, ForeignKey("agent_messages.id"), nullable=True)
+    tool_name = Column(String, nullable=False)
+    arguments = Column(String, nullable=True) # JSON string
+    result = Column(String, nullable=True)    # JSON string
+    success = Column(Integer, default=1)      # 1/0 for boolean in SQLite
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+
+    session = relationship("AgentSession", back_populates="tool_calls")
+    message = relationship("AgentMessage", back_populates="tool_calls")
 

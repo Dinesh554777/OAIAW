@@ -84,3 +84,40 @@ class AgentChatRequest(BaseModel):
 
 class AgentChatResponse(BaseModel):
     response: str
+class AgentChatNewRequest(BaseModel):
+    task_id: int
+
+class AgentSessionResponse(BaseModel):
+    id: int
+    task_id: int
+    candidate_id: int
+
+    class Config:
+        from_attributes = True
+
+class AgentChatApiRequest(BaseModel):
+    session_id: int
+    message: str
+
+class AgentToolCallResponse(BaseModel):
+    tool_name: str
+    arguments: str
+    result: Optional[str]
+    success: int
+
+    class Config:
+        from_attributes = True
+
+class AgentMessageResponse(BaseModel):
+    id: int
+    role: str
+    content: Optional[str]
+    tool_calls: List[AgentToolCallResponse] = []
+
+    class Config:
+        from_attributes = True
+
+class AgentChatApiResponse(BaseModel):
+    session_id: int
+    response: str
+    tool_calls: List[AgentToolCallResponse] = []

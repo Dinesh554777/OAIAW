@@ -17,13 +17,18 @@ export default function Workspace() {
   const [files, setFiles] = useState<any>(null);
   const [activeFile, setActiveFile] = useState<string>('');
   const [fileContents, setFileContents] = useState<Record<string, string>>({});
+  const [agentSessionId, setAgentSessionId] = useState<number | null>(null);
 
   useEffect(() => {
+    // Init Agent Session
+    fetchApi('/agent/session', { method: 'POST', body: JSON.stringify({ task_id: parseInt(taskId) }) })
+      .then(res => setAgentSessionId(res.id))
+      .catch(console.error);
+
     // Fetch mock file system
     fetchApi(`/workspace/${taskId}/files`)
       .then(res => {
         setFiles(res);
-        // Flatten the mock file system just to get initial contents for the editor easily
         const flatten = (node: any, path = '') => {
           let result: any = {};
           for (let key in node) {
@@ -50,10 +55,7 @@ export default function Workspace() {
         method: 'POST',
         body: JSON.stringify({ path, content })
       });
-      console.log('Saved', path);
-    } catch (e) {
-      console.error('Save failed', e);
-    }
+    } catch (e) { console.error('Save failed', e); }
   };
 
   const handleRunTests = async () => {
@@ -61,20 +63,20 @@ export default function Workspace() {
       const res = await fetchApi(`/workspace/${taskId}/run-tests`, { method: 'POST' });
       return JSON.parse(res.payload).output || 'Tests finished.';
     } catch (e) {
-      return 'Test execution failed due to server error.';
+      return 'Test execution failed.';
     }
   };
 
   const handleAgentChat = async (msg: string) => {
+    if (!agentSessionId) return 'Agent is offline.';
     try {
-      const res = await fetchApi(`/workspace/${taskId}/agent/chat`, {
+      const res = await fetchApi(`/agent/chat`, {
         method: 'POST',
-        body: JSON.stringify({ message: msg })
+        body: JSON.stringify({ session_id: agentSessionId, message: msg })
       });
-      const payload = JSON.parse(res.payload);
-      return payload.message || 'I encountered an error.';
+      return res.response;
     } catch (e) {
-      return 'Agent offline.';
+      return 'Agent encountered an error.';
     }
   };
 
