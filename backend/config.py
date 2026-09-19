@@ -11,7 +11,7 @@ class Settings(BaseSettings):
 
     FRONTEND_URL: str = "http://localhost:3000"
 
-    DATABASE_URL: str = "postgresql+psycopg://oaiaw_user:Dinesh30112006@localhost:5432/oaiaw"
+    DATABASE_URL: str = "postgresql+psycopg://postgres:Dinesh30112006@localhost:5432/oaiaw"
 
     JWT_SECRET: str = "CHANGE_ME"
     JWT_ALGORITHM: str = "HS256"

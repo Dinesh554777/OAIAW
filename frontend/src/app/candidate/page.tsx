@@ -94,7 +94,11 @@ export default function CandidateDashboard() {
                        <Activity size={14} className="text-ai" />
                        <span>AI Assistant Enabled</span>
                     </div>
-                    <Button variant="default" className="gap-2 group-hover:bg-primary group-hover:text-primary-foreground transition-all">
+                    <Button 
+                      variant="default" 
+                      className="gap-2 group-hover:bg-primary group-hover:text-primary-foreground transition-all"
+                      onClick={() => window.location.href = `/candidate/workspace/${a.id}`}
+                    >
                       Start Environment
                       <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                     </Button>
