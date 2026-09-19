@@ -26,6 +26,13 @@ class TaskType(str, enum.Enum):
     DEBUGGING = "DEBUGGING"
     CODE_REVIEW = "CODE_REVIEW"
 
+class EventType(str, enum.Enum):
+    FILE_OPENED = "FILE_OPENED"
+    FILE_EDITED = "FILE_EDITED"
+    FILE_SAVED = "FILE_SAVED"
+    TEST_RUN = "TEST_RUN"
+    AGENT_MESSAGE = "AGENT_MESSAGE"
+
 class User(Base):
     __tablename__ = "users"
 
@@ -67,3 +74,14 @@ class Task(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     assessment = relationship("Assessment", back_populates="tasks")
+
+class WorkspaceEvent(Base):
+    __tablename__ = "workspace_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    task_id = Column(Integer, ForeignKey("tasks.id"), nullable=False)
+    candidate_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    event_type = Column(SQLEnum(EventType), nullable=False)
+    payload = Column(String, nullable=True) # Storing JSON as string for simplicity across DBs
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
