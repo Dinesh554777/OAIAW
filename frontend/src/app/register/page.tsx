@@ -16,7 +16,7 @@ export default function Register() {
     try {
       await fetchApi('/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ name, email, password, role }),
+        body: JSON.stringify({ full_name: name, email, password, role }),
       });
       router.push('/login');
     } catch (err: any) {
