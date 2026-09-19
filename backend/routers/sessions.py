@@ -43,3 +43,13 @@ def get_session_git_diff(
         
     workspace_dir = f"/tmp/workspace_{session.task_id}_{session.candidate_id}"
     return {"diff": get_git_diff(workspace_dir)}
+@router.get("/{session_id}/evidence", response_model=list[schemas.EvidenceResponse])
+def get_evidence(
+    session_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    session = db.query(models.AssessmentSession).filter(models.AssessmentSession.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return session.evidence

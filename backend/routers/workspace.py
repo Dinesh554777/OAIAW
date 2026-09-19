@@ -98,8 +98,8 @@ def run_tests(
     event = models.AssessmentEvent(
         assessment_session_id=session.id,
         actor=models.EventActor.CANDIDATE,
-        event_type=models.EventType.TEST_RUN,
-        metadata_json=json.dumps({"output": "PASS  tests/main.test.js\\n  ✓ add (2 ms)\\n\\nTest Suites: 1 passed, 1 total"})
+        event_type=models.EventType.TEST_COMPLETED,
+        metadata_json=json.dumps({"action": "run_tests"})
     )
     db.add(event)
     db.commit()

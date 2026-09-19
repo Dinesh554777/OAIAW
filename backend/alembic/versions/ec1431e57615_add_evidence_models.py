@@ -1,8 +1,8 @@
-"""Add evaluation models
+"""Add evidence models
 
-Revision ID: 0c074086833b
+Revision ID: ec1431e57615
 Revises: 
-Create Date: 2026-09-19 17:04:51.990067
+Create Date: 2026-09-19 17:24:47.129486
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '0c074086833b'
+revision: str = 'ec1431e57615'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -111,6 +111,18 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_evaluation_runs_id'), 'evaluation_runs', ['id'], unique=False)
+    op.create_table('evidence',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('session_id', sa.Integer(), nullable=False),
+    sa.Column('evidence_type', sa.Enum('REQUIREMENT_INTERACTION', 'CODE_CHANGE', 'AI_ASSISTANCE', 'AI_VALIDATION', 'TESTING', 'DEBUGGING', 'ITERATION', 'FINAL_SUBMISSION', name='evidencetype'), nullable=False),
+    sa.Column('source_event_ids', sa.String(), nullable=True),
+    sa.Column('description', sa.Text(), nullable=False),
+    sa.Column('confidence', sa.Float(), nullable=True),
+    sa.Column('timestamp', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.ForeignKeyConstraint(['session_id'], ['assessment_sessions.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_evidence_id'), 'evidence', ['id'], unique=False)
     op.create_table('agent_tool_calls',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('session_id', sa.Integer(), nullable=False),
@@ -148,6 +160,8 @@ def downgrade() -> None:
     op.drop_table('test_results')
     op.drop_index(op.f('ix_agent_tool_calls_id'), table_name='agent_tool_calls')
     op.drop_table('agent_tool_calls')
+    op.drop_index(op.f('ix_evidence_id'), table_name='evidence')
+    op.drop_table('evidence')
     op.drop_index(op.f('ix_evaluation_runs_id'), table_name='evaluation_runs')
     op.drop_table('evaluation_runs')
     op.drop_index(op.f('ix_assessment_events_id'), table_name='assessment_events')

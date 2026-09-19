@@ -6,6 +6,8 @@ from evaluator import run_evaluation
 
 router = APIRouter(prefix="/sessions", tags=["evaluation"])
 
+from evidence_engine import generate_evidence
+
 @router.post("/{session_id}/evaluate", response_model=schemas.EvaluationRunResponse)
 def evaluate_session(
     session_id: int,
@@ -34,6 +36,7 @@ def evaluate_session(
     
     # Trigger synchronous evaluation for prototype
     run_evaluation(db, run.id)
+    generate_evidence(db, session.id)
     db.refresh(run)
     
     return run

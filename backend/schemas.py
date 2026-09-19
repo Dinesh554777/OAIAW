@@ -156,3 +156,16 @@ class EvaluationRunResponse(BaseModel):
 
     class Config:
         from_attributes = True
+from models import EvidenceType
+
+class EvidenceResponse(BaseModel):
+    id: int
+    session_id: int
+    evidence_type: EvidenceType
+    source_event_ids: Optional[str]
+    description: str
+    confidence: Optional[float]
+    timestamp: datetime
+
+    class Config:
+        from_attributes = True

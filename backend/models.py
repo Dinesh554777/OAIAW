@@ -112,6 +112,16 @@ class TestCategory(str, enum.Enum):
     REGRESSION = "REGRESSION"
     CODE_QUALITY = "CODE_QUALITY"
 
+class EvidenceType(str, enum.Enum):
+    REQUIREMENT_INTERACTION = "REQUIREMENT_INTERACTION"
+    CODE_CHANGE = "CODE_CHANGE"
+    AI_ASSISTANCE = "AI_ASSISTANCE"
+    AI_VALIDATION = "AI_VALIDATION"
+    TESTING = "TESTING"
+    DEBUGGING = "DEBUGGING"
+    ITERATION = "ITERATION"
+    FINAL_SUBMISSION = "FINAL_SUBMISSION"
+
 class AssessmentSession(Base):
     __tablename__ = "assessment_sessions"
 
@@ -125,6 +135,20 @@ class AssessmentSession(Base):
     messages = relationship("AgentMessage", back_populates="session", cascade="all, delete-orphan")
     tool_calls = relationship("AgentToolCall", back_populates="session", cascade="all, delete-orphan")
     evaluations = relationship("EvaluationRun", back_populates="session", cascade="all, delete-orphan")
+    evidence = relationship("Evidence", back_populates="session", cascade="all, delete-orphan")
+
+class Evidence(Base):
+    __tablename__ = "evidence"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(Integer, ForeignKey("assessment_sessions.id"), nullable=False)
+    evidence_type = Column(SQLEnum(EvidenceType), nullable=False)
+    source_event_ids = Column(String, nullable=True) # Storing JSON array string
+    description = Column(Text, nullable=False)
+    confidence = Column(Float, nullable=True)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+
+    session = relationship("AssessmentSession", back_populates="evidence")
 
 class TestCase(Base):
     __tablename__ = "test_cases"
