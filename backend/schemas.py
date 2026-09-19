@@ -169,3 +169,21 @@ class EvidenceResponse(BaseModel):
 
     class Config:
         from_attributes = True
+from git_integration import get_git_history, get_git_diff
+
+class ReportSessionSummary(BaseModel):
+    id: int
+    candidate_name: str
+    candidate_email: str
+    task_title: str
+    status: SessionStatus
+    created_at: datetime
+    
+class UnifiedReportResponse(BaseModel):
+    session: ReportSessionSummary
+    evaluation: Optional[EvaluationRunResponse]
+    evidence: List[EvidenceResponse]
+    events: List[AssessmentEventResponse]
+    messages: List[AgentMessageResponse]
+    git_history: List[dict]
+    git_diff: str
