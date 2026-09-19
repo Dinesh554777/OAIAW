@@ -11,7 +11,9 @@ def mock_llm_orchestrator(message: str, tools: AgentTools) -> tuple[str, list]:
     tool_calls = []
     response = ""
 
-    if "list" in message_lower or "files" in message_lower:
+    if "solution" in message_lower or "answer" in message_lower or "code for this" in message_lower:
+        response = "As an AI assistant in this assessment, I cannot provide exact solutions or answers. However, I can offer a hint: Try checking the variable scoping or reviewing the API documentation for the method you are using."
+    elif "list" in message_lower or "files" in message_lower:
         result = tools.list_files()
         tool_calls.append({
             "tool_name": "list_files",

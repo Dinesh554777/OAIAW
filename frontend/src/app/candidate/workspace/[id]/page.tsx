@@ -44,16 +44,44 @@ export default function CandidateWorkspace() {
   const [terminalOutput, setTerminalOutput] = useState<string>('Ready. Click "Run Tests" to execute the test suite.\n');
   const [isRunningTests, setIsRunningTests] = useState(false);
   const [timeLeft, setTimeLeft] = useState(45 * 60); // 45 mins mock
+  const [sessionId, setSessionId] = useState<number | null>(null);
 
-  const { trackEvent } = useEngineeringEvents(parseInt(taskId));
+  const { trackEvent } = useEngineeringEvents(sessionId);
   const editDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   // Track session start
   useEffect(() => {
-    if (taskId) {
+    if (sessionId) {
       trackEvent('SESSION_STARTED', { task_id: taskId });
     }
-  }, [taskId, trackEvent]);
+  }, [sessionId, taskId, trackEvent]);
+
+  // Restrict Copy/Paste
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      e.preventDefault();
+      trackEvent('ERROR_DETECTED', { type: 'paste_attempt', message: 'Pasting code is not allowed' });
+      alert("Pasting code is restricted in this assessment environment.");
+    };
+    document.addEventListener('paste', handlePaste);
+    return () => document.removeEventListener('paste', handlePaste);
+  }, [trackEvent]);
+
+  // Track Tab Switching (External Collaboration)
+  useEffect(() => {
+    const handleBlur = () => {
+      if (sessionId) trackEvent('SESSION_PAUSED', { reason: 'tab_blur' });
+    };
+    const handleFocus = () => {
+      if (sessionId) trackEvent('SESSION_RESUMED', { reason: 'tab_focus' });
+    };
+    window.addEventListener('blur', handleBlur);
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [sessionId, trackEvent]);
 
   // Track file opened
   useEffect(() => {
@@ -95,17 +123,24 @@ export default function CandidateWorkspace() {
       }
     };
     fetchFiles();
-    
     const initSession = async () => {
-        const token = localStorage.getItem('token');
-        await fetch(`${API_BASE_URL}/agent/session`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ task_id: parseInt(taskId) })
-        });
+        try {
+          const token = localStorage.getItem('token');
+          const res = await fetch(`${API_BASE_URL}/agent/session`, {
+              method: 'POST',
+              headers: { 
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ task_id: parseInt(taskId) })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setSessionId(data.id);
+          }
+        } catch (err) {
+          console.error("Failed to init session", err);
+        }
     };
     initSession();
 
@@ -119,6 +154,12 @@ export default function CandidateWorkspace() {
     const timer = setInterval(() => setTimeLeft(prev => prev > 0 ? prev - 1 : 0), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (timeLeft === 0 && sessionId) {
+       submitAssessment();
+    }
+  }, [timeLeft, sessionId]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -195,15 +236,6 @@ export default function CandidateWorkspace() {
 
     try {
       const token = localStorage.getItem('token');
-      // Fetch the actual session id, for prototype we can fetch it again or store it
-      // Let's assume we can get it from /agent/session
-      const sessionRes = await fetch(`${API_BASE_URL}/agent/session`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ task_id: parseInt(taskId) })
-      });
-      const sessionData = await sessionRes.json();
-
       const res = await fetch(`${API_BASE_URL}/agent/chat`, {
         method: 'POST',
         headers: {
@@ -211,7 +243,7 @@ export default function CandidateWorkspace() {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          session_id: sessionData.id,
+          session_id: sessionId,
           message: msg
         })
       });

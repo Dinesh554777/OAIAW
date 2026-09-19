@@ -213,7 +213,7 @@ class EventIngestRequest(BaseModel):
 
 class TimelineEventResponse(BaseModel):
     id: int
-    sequence_number: int
+    sequence_number: Optional[int] = None
     event_type: EventType
     timestamp: datetime
     metadata_json: Optional[Any] = None

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { fetchApi } from '@/lib/api';
@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { RoleSelector, Role } from '@/components/auth/RoleSelector';
-import { AuthBrandPanel } from '@/components/auth/AuthBrandPanel';
 import { RegistrationStepper } from '@/components/auth/RegistrationStepper';
 import { AuthError } from '@/components/auth/AuthError';
 import { CandidateRegistration } from '@/components/auth/CandidateRegistration';
@@ -53,17 +52,18 @@ export default function Register() {
   };
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-2 bg-background text-foreground">
-      <AuthBrandPanel />
+    <div className="flex min-h-screen bg-background text-foreground items-center justify-center relative p-4">
 
-      <div className="flex flex-col items-center justify-center p-6 relative">
-        <div className="w-full max-w-md animate-enter space-y-6">
-          {step < 3 && (
-            <Link href="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4">
+      <div className="w-full max-w-md relative z-10">
+        {step < 3 && (
+          <div className="absolute -top-16 left-0">
+            <Link href="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
               <ArrowLeft size={16} /> Back to home
             </Link>
-          )}
+          </div>
+        )}
 
+        <div className="animate-enter">
           <Card className="border-border shadow-2xl bg-surface/80 backdrop-blur-md">
             <CardHeader className="space-y-3 pb-6">
               <CardTitle className="text-2xl font-bold tracking-tight">Create your account</CardTitle>
