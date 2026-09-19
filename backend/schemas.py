@@ -1,7 +1,7 @@
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
-from models import Role, Difficulty, AssessmentStatus, TaskType, EventType
+from models import Role, Difficulty, AssessmentStatus, TaskType, EventType, EventActor
 
 class UserCreate(BaseModel):
     name: str
@@ -66,15 +66,24 @@ class AssessmentResponse(AssessmentCreate):
 
     class Config:
         from_attributes = True
-class WorkspaceEventCreate(BaseModel):
-    task_id: int
-    event_type: EventType
-    payload: str
 
-class WorkspaceEventResponse(WorkspaceEventCreate):
+class AssessmentEventCreate(BaseModel):
+    assessment_session_id: int
+    event_type: EventType
+    actor: EventActor
+    metadata_json: Optional[str] = None
+
+class AssessmentEventResponse(AssessmentEventCreate):
     id: int
+    timestamp: datetime
+
+    class Config:
+        from_attributes = True
+
+class AssessmentSessionResponse(BaseModel):
+    id: int
+    task_id: int
     candidate_id: int
-    created_at: datetime
 
     class Config:
         from_attributes = True
@@ -84,16 +93,9 @@ class AgentChatRequest(BaseModel):
 
 class AgentChatResponse(BaseModel):
     response: str
+
 class AgentChatNewRequest(BaseModel):
     task_id: int
-
-class AgentSessionResponse(BaseModel):
-    id: int
-    task_id: int
-    candidate_id: int
-
-    class Config:
-        from_attributes = True
 
 class AgentChatApiRequest(BaseModel):
     session_id: int

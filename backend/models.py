@@ -29,9 +29,21 @@ class TaskType(str, enum.Enum):
 class EventType(str, enum.Enum):
     FILE_OPENED = "FILE_OPENED"
     FILE_EDITED = "FILE_EDITED"
-    FILE_SAVED = "FILE_SAVED"
-    TEST_RUN = "TEST_RUN"
-    AGENT_MESSAGE = "AGENT_MESSAGE"
+    FILE_CREATED = "FILE_CREATED"
+    FILE_DELETED = "FILE_DELETED"
+    AI_MESSAGE = "AI_MESSAGE"
+    AI_TOOL_CALL = "AI_TOOL_CALL"
+    TEST_STARTED = "TEST_STARTED"
+    TEST_COMPLETED = "TEST_COMPLETED"
+    TEST_FAILED = "TEST_FAILED"
+    TEST_PASSED = "TEST_PASSED"
+    CODE_CHANGE = "CODE_CHANGE"
+    SUBMITTED = "SUBMITTED"
+
+class EventActor(str, enum.Enum):
+    CANDIDATE = "CANDIDATE"
+    AGENT = "AGENT"
+    SYSTEM = "SYSTEM"
 
 class AgentRole(str, enum.Enum):
     USER = "USER"
@@ -80,44 +92,47 @@ class Task(Base):
 
     assessment = relationship("Assessment", back_populates="tasks")
 
-class WorkspaceEvent(Base):
-    __tablename__ = "workspace_events"
-
-    id = Column(Integer, primary_key=True, index=True)
-    task_id = Column(Integer, ForeignKey("tasks.id"), nullable=False)
-    candidate_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    event_type = Column(SQLEnum(EventType), nullable=False)
-    payload = Column(String, nullable=True) # Storing JSON as string for simplicity across DBs
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-
-class AgentSession(Base):
-    __tablename__ = "agent_sessions"
+class AssessmentSession(Base):
+    __tablename__ = "assessment_sessions"
 
     id = Column(Integer, primary_key=True, index=True)
     task_id = Column(Integer, ForeignKey("tasks.id"), nullable=False)
     candidate_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+    events = relationship("AssessmentEvent", back_populates="session", cascade="all, delete-orphan")
     messages = relationship("AgentMessage", back_populates="session", cascade="all, delete-orphan")
     tool_calls = relationship("AgentToolCall", back_populates="session", cascade="all, delete-orphan")
+
+class AssessmentEvent(Base):
+    __tablename__ = "assessment_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    assessment_session_id = Column(Integer, ForeignKey("assessment_sessions.id"), nullable=False)
+    event_type = Column(SQLEnum(EventType), nullable=False)
+    actor = Column(SQLEnum(EventActor), nullable=False)
+    metadata_json = Column(String, nullable=True) # Storing JSON as string
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+    
+    session = relationship("AssessmentSession", back_populates="events")
 
 class AgentMessage(Base):
     __tablename__ = "agent_messages"
 
     id = Column(Integer, primary_key=True, index=True)
-    session_id = Column(Integer, ForeignKey("agent_sessions.id"), nullable=False)
+    session_id = Column(Integer, ForeignKey("assessment_sessions.id"), nullable=False)
     role = Column(SQLEnum(AgentRole), nullable=False)
     content = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    session = relationship("AgentSession", back_populates="messages")
+    session = relationship("AssessmentSession", back_populates="messages")
     tool_calls = relationship("AgentToolCall", back_populates="message")
 
 class AgentToolCall(Base):
     __tablename__ = "agent_tool_calls"
 
     id = Column(Integer, primary_key=True, index=True)
-    session_id = Column(Integer, ForeignKey("agent_sessions.id"), nullable=False)
+    session_id = Column(Integer, ForeignKey("assessment_sessions.id"), nullable=False)
     message_id = Column(Integer, ForeignKey("agent_messages.id"), nullable=True)
     tool_name = Column(String, nullable=False)
     arguments = Column(String, nullable=True) # JSON string
@@ -125,6 +140,6 @@ class AgentToolCall(Base):
     success = Column(Integer, default=1)      # 1/0 for boolean in SQLite
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
 
-    session = relationship("AgentSession", back_populates="tool_calls")
+    session = relationship("AssessmentSession", back_populates="tool_calls")
     message = relationship("AgentMessage", back_populates="tool_calls")
 

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from database import engine, Base
-from routers import auth, assessments, tasks, workspace, agent
+from routers import auth, assessments, tasks, workspace, agent, sessions
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="OAIAW Backend", version="0.1.0")
@@ -18,6 +18,7 @@ app.include_router(assessments.router)
 app.include_router(tasks.router)
 app.include_router(workspace.router)
 app.include_router(agent.router)
+app.include_router(sessions.router)
 
 @app.get("/health")
 def health_check():
