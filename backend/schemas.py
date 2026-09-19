@@ -179,6 +179,23 @@ class ReportSessionSummary(BaseModel):
     status: SessionStatus
     created_at: datetime
     
+class EvidencePoint(BaseModel):
+    description: str
+    event_ids: List[int]
+
+class AIAssessmentSummaryResponse(BaseModel):
+    id: int
+    session_id: int
+    task_summary: str
+    implementation_summary: str
+    testing_summary: str
+    ai_usage_summary: str
+    debugging_summary: str
+    evidence_points: str # JSON string for now
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 class UnifiedReportResponse(BaseModel):
     session: ReportSessionSummary
     evaluation: Optional[EvaluationRunResponse]
@@ -187,3 +204,4 @@ class UnifiedReportResponse(BaseModel):
     messages: List[AgentMessageResponse]
     git_history: List[dict]
     git_diff: str
+    ai_summary: Optional[AIAssessmentSummaryResponse] = None

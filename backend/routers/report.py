@@ -54,5 +54,27 @@ def get_unified_report(
         "events": events,
         "messages": messages,
         "git_history": git_history,
-        "git_diff": git_diff
+        "git_diff": git_diff,
+        "ai_summary": session.ai_summary
     }
+
+from ai_assessor import generate_ai_summary
+
+@router.post("/{session_id}/generate-ai-summary", response_model=schemas.AIAssessmentSummaryResponse)
+def trigger_ai_summary(
+    session_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    if current_user.role not in [models.Role.ADMIN, models.Role.ASSESSOR]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    session = db.query(models.AssessmentSession).filter(models.AssessmentSession.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+        
+    if session.ai_summary:
+        return session.ai_summary
+        
+    summary = generate_ai_summary(db, session.id)
+    return summary

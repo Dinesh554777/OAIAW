@@ -29,7 +29,21 @@ export default function AssessmentReportPage() {
   if (loading) return <div className="p-8 text-white">Loading report...</div>;
   if (!report) return <div className="p-8 text-red-400">Failed to load report.</div>;
 
-  const { session, evaluation, evidence, events, git_history, git_diff, messages } = report;
+  const { session, evaluation, evidence, events, git_history, git_diff, messages, ai_summary } = report;
+
+  const [generatingAI, setGeneratingAI] = useState(false);
+
+  const handleGenerateAI = async () => {
+    setGeneratingAI(true);
+    try {
+      const data = await api.post(`/sessions/${sessionId}/generate-ai-summary`);
+      setReport({ ...report, ai_summary: data });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setGeneratingAI(false);
+    }
+  };
 
   // Simple custom diff renderer
   const renderDiff = (diffText: string) => {
@@ -71,6 +85,71 @@ export default function AssessmentReportPage() {
           <p className="text-sm text-slate-500 mt-2">ID: {session.id}</p>
         </div>
       </header>
+
+      {/* AI Summary Panel */}
+      <section className="mb-10 bg-indigo-950/20 border border-indigo-900 rounded-xl p-6 shadow-xl">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+            <span className="text-indigo-400">🤖</span> AI Assessment Assistant
+          </h2>
+          {!ai_summary && (
+            <button 
+              onClick={handleGenerateAI}
+              disabled={generatingAI}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded font-medium text-sm transition-colors disabled:opacity-50"
+            >
+              {generatingAI ? 'Generating...' : 'Generate AI Summary'}
+            </button>
+          )}
+        </div>
+        
+        {ai_summary ? (
+          <div>
+            <div className="bg-indigo-900/40 text-indigo-200 text-xs py-1 px-3 rounded inline-block mb-4 border border-indigo-800">
+              AI-generated summary based on observable assessment evidence.
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <h3 className="text-indigo-300 font-medium mb-1 text-sm">Task Summary</h3>
+                <p className="text-slate-300 text-sm mb-4">{ai_summary.task_summary}</p>
+                
+                <h3 className="text-indigo-300 font-medium mb-1 text-sm">Implementation</h3>
+                <p className="text-slate-300 text-sm">{ai_summary.implementation_summary}</p>
+              </div>
+              <div>
+                <h3 className="text-indigo-300 font-medium mb-1 text-sm">Testing Summary</h3>
+                <p className="text-slate-300 text-sm mb-4">{ai_summary.testing_summary}</p>
+                
+                <h3 className="text-indigo-300 font-medium mb-1 text-sm">AI Usage & Debugging</h3>
+                <p className="text-slate-300 text-sm">{ai_summary.ai_usage_summary} {ai_summary.debugging_summary}</p>
+              </div>
+            </div>
+            
+            <h3 className="text-indigo-300 font-medium mb-2 text-sm border-t border-indigo-900/50 pt-4">Observable Evidence Points</h3>
+            <ul className="space-y-2">
+              {JSON.parse(ai_summary.evidence_points).map((pt: any, i: number) => (
+                <li key={i} className="flex items-start gap-2">
+                  <span className="text-indigo-500 mt-1">•</span>
+                  <span className="text-slate-300 text-sm flex-1">{pt.description}</span>
+                  {pt.event_ids.length > 0 && (
+                    <button 
+                      onClick={() => {
+                        setActiveTab('timeline');
+                      }}
+                      className="text-xs text-indigo-400 hover:text-indigo-300 underline"
+                    >
+                      View Event(s)
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <p className="text-slate-400 text-sm">Click generate to produce a structured, evidence-grounded summary of the candidate's performance.</p>
+        )}
+      </section>
 
       {/* Evaluation Summary */}
       {evaluation && (

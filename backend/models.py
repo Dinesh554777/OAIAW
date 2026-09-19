@@ -136,6 +136,22 @@ class AssessmentSession(Base):
     tool_calls = relationship("AgentToolCall", back_populates="session", cascade="all, delete-orphan")
     evaluations = relationship("EvaluationRun", back_populates="session", cascade="all, delete-orphan")
     evidence = relationship("Evidence", back_populates="session", cascade="all, delete-orphan")
+    ai_summary = relationship("AIAssessmentSummary", back_populates="session", uselist=False, cascade="all, delete-orphan")
+
+class AIAssessmentSummary(Base):
+    __tablename__ = "ai_assessment_summaries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(Integer, ForeignKey("assessment_sessions.id"), nullable=False, unique=True)
+    task_summary = Column(Text, nullable=False)
+    implementation_summary = Column(Text, nullable=False)
+    testing_summary = Column(Text, nullable=False)
+    ai_usage_summary = Column(Text, nullable=False)
+    debugging_summary = Column(Text, nullable=False)
+    evidence_points = Column(String, nullable=False) # Storing JSON array string
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    session = relationship("AssessmentSession", back_populates="ai_summary")
 
 class Evidence(Base):
     __tablename__ = "evidence"

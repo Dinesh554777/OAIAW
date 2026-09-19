@@ -1,8 +1,8 @@
-"""Add evidence models
+"""Add AI summary model
 
-Revision ID: ec1431e57615
+Revision ID: 910badb2c090
 Revises: 
-Create Date: 2026-09-19 17:24:47.129486
+Create Date: 2026-09-19 18:38:57.713933
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'ec1431e57615'
+revision: str = '910badb2c090'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -90,6 +90,21 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_agent_messages_id'), 'agent_messages', ['id'], unique=False)
+    op.create_table('ai_assessment_summaries',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('session_id', sa.Integer(), nullable=False),
+    sa.Column('task_summary', sa.Text(), nullable=False),
+    sa.Column('implementation_summary', sa.Text(), nullable=False),
+    sa.Column('testing_summary', sa.Text(), nullable=False),
+    sa.Column('ai_usage_summary', sa.Text(), nullable=False),
+    sa.Column('debugging_summary', sa.Text(), nullable=False),
+    sa.Column('evidence_points', sa.String(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.ForeignKeyConstraint(['session_id'], ['assessment_sessions.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('session_id')
+    )
+    op.create_index(op.f('ix_ai_assessment_summaries_id'), 'ai_assessment_summaries', ['id'], unique=False)
     op.create_table('assessment_events',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('assessment_session_id', sa.Integer(), nullable=False),
@@ -166,6 +181,8 @@ def downgrade() -> None:
     op.drop_table('evaluation_runs')
     op.drop_index(op.f('ix_assessment_events_id'), table_name='assessment_events')
     op.drop_table('assessment_events')
+    op.drop_index(op.f('ix_ai_assessment_summaries_id'), table_name='ai_assessment_summaries')
+    op.drop_table('ai_assessment_summaries')
     op.drop_index(op.f('ix_agent_messages_id'), table_name='agent_messages')
     op.drop_table('agent_messages')
     op.drop_index(op.f('ix_test_cases_id'), table_name='test_cases')
