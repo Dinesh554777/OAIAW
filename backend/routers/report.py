@@ -6,7 +6,7 @@ from git_integration import get_git_history, get_git_diff
 
 router = APIRouter(prefix="/sessions", tags=["report"])
 
-@router.get("/{session_id}/report", response_model=schemas.UnifiedReportResponse)
+@router.get("/{session_id}/report")
 def get_unified_report(
     session_id: int,
     db: Session = Depends(get_db),
@@ -24,7 +24,7 @@ def get_unified_report(
     
     session_summary = {
         "id": session.id,
-        "candidate_name": candidate.name,
+        "candidate_name": candidate.full_name,
         "candidate_email": candidate.email,
         "task_title": task.title,
         "status": session.status,
@@ -32,12 +32,11 @@ def get_unified_report(
     }
     
     evaluation = db.query(models.EvaluationRun).filter(
-        models.EvaluationRun.session_id == session.id
+        models.EvaluationRun.assessment_session_id == session.id
     ).order_by(models.EvaluationRun.created_at.desc()).first()
     
     evidence = session.evidence
     events = session.events
-    messages = session.messages
     
     workspace_dir = f"/tmp/workspace_{session.task_id}_{session.candidate_id}"
     try:
@@ -52,15 +51,14 @@ def get_unified_report(
         "evaluation": evaluation,
         "evidence": evidence,
         "events": events,
-        "messages": messages,
         "git_history": git_history,
         "git_diff": git_diff,
-        "ai_summary": session.ai_summary
+        "ai_summary": session.report
     }
 
 from ai_assessor import generate_ai_summary
 
-@router.post("/{session_id}/generate-ai-summary", response_model=schemas.AIAssessmentSummaryResponse)
+@router.post("/{session_id}/generate-ai-summary")
 def trigger_ai_summary(
     session_id: int,
     db: Session = Depends(get_db),
@@ -73,8 +71,8 @@ def trigger_ai_summary(
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
         
-    if session.ai_summary:
-        return session.ai_summary
+    if session.report:
+        return session.report
         
     summary = generate_ai_summary(db, session.id)
     return summary

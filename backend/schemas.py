@@ -123,14 +123,14 @@ class AgentChatApiResponse(BaseModel):
     session_id: int
     response: str
     tool_calls: List[AgentToolCallResponse] = []
-from models import SessionStatus, EvalStatus, TestStatus, TestCategory
+from models import SessionStatus, EvalStatus, TestStatus
 
 class TestCaseResponse(BaseModel):
     id: int
-    task_id: int
     name: str
-    category: TestCategory
-    is_hidden: int
+    description: str
+    visibility: str
+    weight: int
 
     class Config:
         from_attributes = True
