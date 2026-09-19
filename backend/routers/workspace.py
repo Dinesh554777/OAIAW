@@ -60,7 +60,7 @@ def save_file(
     event = models.AssessmentEvent(
         assessment_session_id=session.id,
         actor=models.EventActor.CANDIDATE,
-        event_type=models.EventType.FILE_SAVED,
+        event_type=models.EventType.FILE_EDITED,
         metadata_json=json.dumps(payload)
     )
     db.add(event)

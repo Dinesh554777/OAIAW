@@ -4,6 +4,7 @@ import json
 
 def init_git_repo(workspace_dir: str):
     if not os.path.exists(os.path.join(workspace_dir, '.git')):
+        os.makedirs(workspace_dir, exist_ok=True)
         subprocess.run(['git', 'init'], cwd=workspace_dir, check=True, capture_output=True)
         subprocess.run(['git', 'config', 'user.email', 'candidate@oaiaw.com'], cwd=workspace_dir, check=True)
         subprocess.run(['git', 'config', 'user.name', 'Candidate'], cwd=workspace_dir, check=True)

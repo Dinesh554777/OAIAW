@@ -62,7 +62,7 @@ def test_git_history_and_events():
     assert res_events.status_code == 200
     events = res_events.json()
     assert len(events) > 0
-    assert events[0]["event_type"] == "FILE_SAVED"
+    assert events[0]["event_type"] == "FILE_EDITED"
     
     # 4. Check git history
     res_git = client.get(f"/sessions/{session_id}/git-history", headers={"Authorization": f"Bearer {token_assessor}"})
