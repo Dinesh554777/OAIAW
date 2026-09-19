@@ -205,3 +205,37 @@ class UnifiedReportResponse(BaseModel):
     git_history: List[dict]
     git_diff: str
     ai_summary: Optional[AIAssessmentSummaryResponse] = None
+
+class EventIngestRequest(BaseModel):
+    event_type: EventType
+    metadata: Optional[Dict[str, Any]] = None
+    source: str = "workspace"
+
+class TimelineEventResponse(BaseModel):
+    id: int
+    sequence_number: int
+    event_type: EventType
+    timestamp: datetime
+    metadata_json: Optional[Any] = None
+    source: Optional[str] = None
+    actor: EventActor
+
+    class Config:
+        from_attributes = True
+
+class SessionTimelineSummary(BaseModel):
+    duration_seconds: int
+    files_modified: int
+    ai_interactions: int
+    ai_tools_approved: int
+    ai_tools_rejected: int
+    test_runs: int
+    successful_test_runs: int
+    failed_test_runs: int
+    git_commits: int
+    total_events: int
+
+class TimelineResponse(BaseModel):
+    session_id: int
+    summary: SessionTimelineSummary
+    events: List[TimelineEventResponse]

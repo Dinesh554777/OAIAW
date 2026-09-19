@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { API_BASE_URL } from '@/lib/api';
 import { Editor } from '@monaco-editor/react';
+import { useEngineeringEvents } from '@/hooks/useEngineeringEvents';
 import { 
   Play, 
   TerminalSquare, 
@@ -43,6 +44,23 @@ export default function CandidateWorkspace() {
   const [terminalOutput, setTerminalOutput] = useState<string>('Ready. Click "Run Tests" to execute the test suite.\n');
   const [isRunningTests, setIsRunningTests] = useState(false);
   const [timeLeft, setTimeLeft] = useState(45 * 60); // 45 mins mock
+
+  const { trackEvent } = useEngineeringEvents(parseInt(taskId));
+  const editDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Track session start
+  useEffect(() => {
+    if (taskId) {
+      trackEvent('SESSION_STARTED', { task_id: taskId });
+    }
+  }, [taskId, trackEvent]);
+
+  // Track file opened
+  useEffect(() => {
+    if (activeFile) {
+      trackEvent('FILE_OPENED', { file_path: activeFile });
+    }
+  }, [activeFile, trackEvent]);
 
   // Fetch initial files
   useEffect(() => {
@@ -111,6 +129,11 @@ export default function CandidateWorkspace() {
   const handleEditorChange = (value: string | undefined) => {
     if (value !== undefined) {
       setFileContents(prev => ({ ...prev, [activeFile]: value }));
+      
+      if (editDebounceRef.current) clearTimeout(editDebounceRef.current);
+      editDebounceRef.current = setTimeout(() => {
+        trackEvent('CODE_CHANGE', { file_path: activeFile });
+      }, 2000);
     }
   };
 
@@ -129,6 +152,7 @@ export default function CandidateWorkspace() {
           content: fileContents[activeFile]
         })
       });
+      trackEvent('FILE_SAVED', { file_path: activeFile });
     } catch (err) {
       console.error(err);
     } finally {
@@ -139,6 +163,7 @@ export default function CandidateWorkspace() {
   const runTests = async () => {
     setIsRunningTests(true);
     setTerminalOutput(prev => prev + '\n> npm run test\nRunning tests...\n');
+    trackEvent('TEST_RUN_STARTED', {});
     try {
       const token = localStorage.getItem('token');
       await fetch(`${API_BASE_URL}/workspace/${taskId}/run-tests`, {
@@ -149,10 +174,13 @@ export default function CandidateWorkspace() {
       setTimeout(() => {
         setTerminalOutput(prev => prev + '\n✓ src/utils.js: add() works perfectly.\n\nTest Suites: 1 passed, 1 total\nTests:       1 passed, 1 total\nTime:        1.2s\n');
         setIsRunningTests(false);
+        trackEvent('TEST_RUN_COMPLETED', { passed: 1, failed: 0, duration_ms: 1200 });
+        trackEvent('TEST_PASSED', {});
       }, 1500);
     } catch (err) {
       setTerminalOutput(prev => prev + '\nError running tests.\n');
       setIsRunningTests(false);
+      trackEvent('TEST_FAILED', { error: 'Execution failed' });
     }
   };
 
@@ -162,6 +190,8 @@ export default function CandidateWorkspace() {
     setChatInput('');
     setChatHistory(prev => [...prev, { id: Date.now().toString(), role: 'USER', content: msg }]);
     setIsAiTyping(true);
+    
+    trackEvent('AI_MESSAGE_SENT', { length: msg.length });
 
     try {
       const token = localStorage.getItem('token');
@@ -191,6 +221,7 @@ export default function CandidateWorkspace() {
         role: 'AGENT', 
         content: data.response 
       }]);
+      trackEvent('AI_RESPONSE_RECEIVED', { length: data.response?.length || 0 });
     } catch (err) {
       setChatHistory(prev => [...prev, { id: Date.now().toString(), role: 'AGENT', content: 'Sorry, I encountered an error.' }]);
     } finally {
@@ -199,6 +230,7 @@ export default function CandidateWorkspace() {
   };
   
   const submitAssessment = async () => {
+      trackEvent('SUBMISSION_CREATED', {});
       // For prototype, we redirect to dashboard
       router.push('/');
   }

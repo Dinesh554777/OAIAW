@@ -62,22 +62,62 @@ class ToolCallStatus(str, enum.Enum):
     REJECTED = "REJECTED"
 
 class EventType(str, enum.Enum):
+    # Workspace
     SESSION_STARTED = "SESSION_STARTED"
+    SESSION_RESUMED = "SESSION_RESUMED"
+    SESSION_PAUSED = "SESSION_PAUSED"
+    SESSION_SUBMITTED = "SESSION_SUBMITTED"
+    SESSION_TERMINATED = "SESSION_TERMINATED"
+    SESSION_EXPIRED = "SESSION_EXPIRED"
+
+    # File activity
     FILE_OPENED = "FILE_OPENED"
-    FILE_EDITED = "FILE_EDITED"
     FILE_CREATED = "FILE_CREATED"
+    FILE_EDITED = "FILE_EDITED"
     FILE_DELETED = "FILE_DELETED"
-    AI_MESSAGE = "AI_MESSAGE"
-    AI_TOOL_CALL = "AI_TOOL_CALL"
-    TEST_STARTED = "TEST_STARTED"
-    TEST_COMPLETED = "TEST_COMPLETED"
+    FILE_SAVED = "FILE_SAVED"
+
+    # Code activity
+    CODE_CHANGE = "CODE_CHANGE"
+    PATCH_APPLIED = "PATCH_APPLIED"
+
+    # AI activity
+    AI_MESSAGE = "AI_MESSAGE"  # Legacy compatibility
+    AI_TOOL_CALL = "AI_TOOL_CALL" # Legacy compatibility
+    AI_MESSAGE_SENT = "AI_MESSAGE_SENT"
+    AI_RESPONSE_RECEIVED = "AI_RESPONSE_RECEIVED"
+    AI_TOOL_PROPOSED = "AI_TOOL_PROPOSED"
+    AI_TOOL_APPROVED = "AI_TOOL_APPROVED"
+    AI_TOOL_REJECTED = "AI_TOOL_REJECTED"
+    AI_TOOL_EXECUTED = "AI_TOOL_EXECUTED"
+    AI_TOOL_FAILED = "AI_TOOL_FAILED"
+
+    # Testing
+    TEST_STARTED = "TEST_STARTED" # Legacy
+    TEST_COMPLETED = "TEST_COMPLETED" # Legacy
+    TEST_RUN_STARTED = "TEST_RUN_STARTED"
+    TEST_RUN_COMPLETED = "TEST_RUN_COMPLETED"
     TEST_FAILED = "TEST_FAILED"
     TEST_PASSED = "TEST_PASSED"
-    CODE_CHANGE = "CODE_CHANGE"
-    DEBUGGING = "DEBUGGING"
+
+    # Debugging
+    DEBUGGING = "DEBUGGING" # Legacy
+    ERROR_DETECTED = "ERROR_DETECTED"
+    ERROR_INSPECTED = "ERROR_INSPECTED"
+    DEBUG_ATTEMPT = "DEBUG_ATTEMPT"
+    DEBUG_RESOLVED = "DEBUG_RESOLVED"
+
+    # Git
+    GIT_STATUS = "GIT_STATUS"
+    GIT_DIFF_VIEWED = "GIT_DIFF_VIEWED"
     GIT_COMMIT = "GIT_COMMIT"
-    SUBMITTED = "SUBMITTED"
-    SESSION_EXPIRED = "SESSION_EXPIRED"
+
+    # Assessment
+    TASK_VIEWED = "TASK_VIEWED"
+    TASK_STARTED = "TASK_STARTED"
+    TASK_COMPLETED = "TASK_COMPLETED"
+    SUBMISSION_CREATED = "SUBMISSION_CREATED"
+    SUBMITTED = "SUBMITTED" # Legacy
 
 class EventActor(str, enum.Enum):
     CANDIDATE = "CANDIDATE"
@@ -266,6 +306,8 @@ class AssessmentEvent(Base):
     assessment_session_id = Column(Integer, ForeignKey("assessment_sessions.id"), index=True, nullable=False)
     event_type = Column(SQLEnum(EventType), index=True, nullable=False)
     actor = Column(SQLEnum(EventActor), index=True, nullable=False)
+    source = Column(String, index=True, nullable=True)
+    sequence_number = Column(Integer, index=True, nullable=True)
     metadata_json = Column(JSON, nullable=True) 
     timestamp = Column(DateTime(timezone=True), index=True, server_default=func.now())
     

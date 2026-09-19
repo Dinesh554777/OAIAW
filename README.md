@@ -1,4 +1,4 @@
-﻿# OAIAW - Online Assessment in the AI World
+# OAIAW - Online Assessment in the AI World
 
 ## Project Overview
 OAIAW is a platform designed for technical assessment in an AI-assisted software engineering environment. 
@@ -47,8 +47,8 @@ Instead of merely verifying final code, OAIAW evaluates the entire engineering l
 | AI verification           | Partial  |
 | Testing                   | Verified |
 | Git evidence              | Partial  |
-| Engineering timeline      | Partial  |
-| Evidence engine           | Partial  |
+| Engineering timeline      | Verified |
+| Evidence engine           | Verified |
 | Assessment reports        | Partial  |
 | PostgreSQL persistence    | Verified |
 | Security controls         | Verified |
