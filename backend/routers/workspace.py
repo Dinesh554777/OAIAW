@@ -55,6 +55,8 @@ def save_file(
     current_user: models.User = Depends(auth.get_current_user)
 ):
     session = get_or_create_session(task_id, db, current_user)
+    if session.status == models.SessionStatus.SUBMITTED:
+        raise HTTPException(status_code=403, detail="Workspace is locked after submission")
     
     # Log event
     event = models.AssessmentEvent(
@@ -91,6 +93,8 @@ def run_tests(
     current_user: models.User = Depends(auth.get_current_user)
 ):
     session = get_or_create_session(task_id, db, current_user)
+    if session.status == models.SessionStatus.SUBMITTED:
+        raise HTTPException(status_code=403, detail="Workspace is locked after submission")
     event = models.AssessmentEvent(
         assessment_session_id=session.id,
         actor=models.EventActor.CANDIDATE,

@@ -123,3 +123,36 @@ class AgentChatApiResponse(BaseModel):
     session_id: int
     response: str
     tool_calls: List[AgentToolCallResponse] = []
+from models import SessionStatus, EvalStatus, TestStatus, TestCategory
+
+class TestCaseResponse(BaseModel):
+    id: int
+    task_id: int
+    name: str
+    category: TestCategory
+    is_hidden: int
+
+    class Config:
+        from_attributes = True
+
+class TestResultResponse(BaseModel):
+    id: int
+    test_case_id: int
+    status: TestStatus
+    execution_time: Optional[float]
+    output_summary: Optional[str]
+    failure_summary: Optional[str]
+
+    class Config:
+        from_attributes = True
+
+class EvaluationRunResponse(BaseModel):
+    id: int
+    session_id: int
+    status: EvalStatus
+    created_at: datetime
+    completed_at: Optional[datetime]
+    results: List[TestResultResponse] = []
+
+    class Config:
+        from_attributes = True

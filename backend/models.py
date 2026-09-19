@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Enum as SQLEnum, DateTime, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Float, Enum as SQLEnum, DateTime, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
@@ -92,17 +92,74 @@ class Task(Base):
 
     assessment = relationship("Assessment", back_populates="tasks")
 
+class SessionStatus(str, enum.Enum):
+    IN_PROGRESS = "IN_PROGRESS"
+    SUBMITTED = "SUBMITTED"
+
+class EvalStatus(str, enum.Enum):
+    PENDING = "PENDING"
+    RUNNING = "RUNNING"
+    COMPLETED = "COMPLETED"
+
+class TestStatus(str, enum.Enum):
+    PASS = "PASS"
+    FAIL = "FAIL"
+    ERROR = "ERROR"
+
+class TestCategory(str, enum.Enum):
+    FUNCTIONAL = "FUNCTIONAL"
+    EDGE_CASE = "EDGE_CASE"
+    REGRESSION = "REGRESSION"
+    CODE_QUALITY = "CODE_QUALITY"
+
 class AssessmentSession(Base):
     __tablename__ = "assessment_sessions"
 
     id = Column(Integer, primary_key=True, index=True)
     task_id = Column(Integer, ForeignKey("tasks.id"), nullable=False)
     candidate_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    status = Column(SQLEnum(SessionStatus), default=SessionStatus.IN_PROGRESS, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     events = relationship("AssessmentEvent", back_populates="session", cascade="all, delete-orphan")
     messages = relationship("AgentMessage", back_populates="session", cascade="all, delete-orphan")
     tool_calls = relationship("AgentToolCall", back_populates="session", cascade="all, delete-orphan")
+    evaluations = relationship("EvaluationRun", back_populates="session", cascade="all, delete-orphan")
+
+class TestCase(Base):
+    __tablename__ = "test_cases"
+
+    id = Column(Integer, primary_key=True, index=True)
+    task_id = Column(Integer, ForeignKey("tasks.id"), nullable=False)
+    name = Column(String, nullable=False)
+    category = Column(SQLEnum(TestCategory), nullable=False)
+    is_hidden = Column(Integer, default=0) # boolean 0/1
+
+class EvaluationRun(Base):
+    __tablename__ = "evaluation_runs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(Integer, ForeignKey("assessment_sessions.id"), nullable=False)
+    status = Column(SQLEnum(EvalStatus), default=EvalStatus.PENDING, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+
+    session = relationship("AssessmentSession", back_populates="evaluations")
+    results = relationship("TestResult", back_populates="run", cascade="all, delete-orphan")
+
+class TestResult(Base):
+    __tablename__ = "test_results"
+
+    id = Column(Integer, primary_key=True, index=True)
+    evaluation_run_id = Column(Integer, ForeignKey("evaluation_runs.id"), nullable=False)
+    test_case_id = Column(Integer, ForeignKey("test_cases.id"), nullable=False)
+    status = Column(SQLEnum(TestStatus), nullable=False)
+    execution_time = Column(Float, nullable=True)
+    output_summary = Column(Text, nullable=True)
+    failure_summary = Column(Text, nullable=True)
+
+    run = relationship("EvaluationRun", back_populates="results")
+    test_case = relationship("TestCase")
 
 class AssessmentEvent(Base):
     __tablename__ = "assessment_events"
