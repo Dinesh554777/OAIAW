@@ -13,6 +13,18 @@ export function AppShell({ children, userRole }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = React.useState(true)
   const pathname = usePathname()
 
+  const roleColors = {
+    ADMIN: "border-red-500/50 from-red-500/10 to-transparent",
+    ASSESSOR: "border-blue-500/50 from-blue-500/10 to-transparent",
+    CANDIDATE: "border-emerald-500/50 from-emerald-500/10 to-transparent"
+  }
+  
+  const roleTextColors = {
+    ADMIN: "text-red-400",
+    ASSESSOR: "text-blue-400",
+    CANDIDATE: "text-emerald-400"
+  }
+
   const navItems = {
     ADMIN: [
       { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
@@ -95,13 +107,13 @@ export function AppShell({ children, userRole }: AppShellProps) {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col relative min-w-0">
-        <header className="h-14 flex items-center justify-between border-b border-border bg-surface/50 px-6 backdrop-blur-sm sticky top-0 z-10">
+        <header className={`h-14 flex items-center justify-between border-b ${userRole ? roleColors[userRole].split(' ')[0] : 'border-border'} bg-surface/50 px-6 backdrop-blur-sm sticky top-0 z-10 bg-gradient-to-r ${userRole ? roleColors[userRole].split(' ').slice(1).join(' ') : ''}`}>
           <div className="flex items-center gap-2">
             {!sidebarOpen && (
               <span className="font-bold text-lg tracking-tight mr-4">OAIAW</span>
             )}
-            <span className="text-sm font-medium capitalize text-muted-foreground">
-              {userRole?.toLowerCase()} Portal
+            <span className={`text-sm font-bold uppercase tracking-wider ${userRole ? roleTextColors[userRole] : 'text-muted-foreground'}`}>
+              {userRole} PORTAL
             </span>
           </div>
           <div className="flex items-center gap-4">
