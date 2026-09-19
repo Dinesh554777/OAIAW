@@ -1,40 +1,65 @@
 import os
 import json
 from sandbox import SandboxExecutor, SandboxSecurityError
+from policy import ControlledEnvironmentPolicy, PolicyViolationError
 
 class AgentTools:
-    def __init__(self, workspace_dir: str):
-        self.sandbox = SandboxExecutor(workspace_dir)
+    def __init__(self, workspace_dir: str, policy: ControlledEnvironmentPolicy = None):
+        self.policy = policy
+        self.sandbox = SandboxExecutor(workspace_dir, policy=policy)
 
     def list_files(self) -> str:
+        if self.policy and not self.policy.policy.allow_file_read:
+            return json.dumps({"error": "File reading is disabled by policy."})
+            
         files = []
         for root, _, filenames in os.walk(self.sandbox.workspace_dir):
             for filename in filenames:
                 rel_dir = os.path.relpath(root, self.sandbox.workspace_dir)
                 rel_file = os.path.join(rel_dir, filename) if rel_dir != "." else filename
+                if self.policy and self.policy._is_secret_path(rel_file) and not self.policy.policy.allow_secret_access:
+                    continue
                 files.append(rel_file)
+                
+        if self.policy and getattr(self.policy.policy, 'max_search_results', None):
+            files = files[:self.policy.policy.max_search_results]
+            
         return json.dumps(files)
 
     def read_file(self, path: str) -> str:
         try:
+            if self.policy:
+                self.policy.check_file_read(path)
+                
             secure_p = self.sandbox.secure_path(path)
             if not os.path.exists(secure_p):
                 return json.dumps({"error": "File not found"})
+                
+            if self.policy and getattr(self.policy.policy, 'max_file_size_mb', None):
+                if os.path.getsize(secure_p) > self.policy.policy.max_file_size_mb * 1024 * 1024:
+                    return json.dumps({"error": f"File exceeds maximum allowed size ({self.policy.policy.max_file_size_mb}MB)"})
+                    
             with open(secure_p, 'r') as f:
-                return json.dumps({"content": f.read()})
-        except SandboxSecurityError as e:
+                content = f.read()
+                if self.policy:
+                    content = self.policy.redact_secrets(content)
+                return json.dumps({"content": content})
+        except (SandboxSecurityError, PolicyViolationError) as e:
             return json.dumps({"error": str(e)})
         except Exception as e:
             return json.dumps({"error": str(e)})
 
     def write_file(self, path: str, content: str) -> str:
         try:
+            if self.policy:
+                self.policy.check_file_write(path)
+                
             secure_p = self.sandbox.secure_path(path)
             os.makedirs(os.path.dirname(secure_p), exist_ok=True)
             with open(secure_p, 'w') as f:
                 f.write(content)
             return json.dumps({"status": "success"})
-        except SandboxSecurityError as e:
+        except (SandboxSecurityError, PolicyViolationError) as e:
             return json.dumps({"error": str(e)})
         except Exception as e:
             return json.dumps({"error": str(e)})
@@ -56,6 +81,9 @@ class AgentTools:
 
     def run_tests(self) -> str:
         try:
+            if self.policy:
+                self.policy.check_tool_execution("run_tests")
+                
             # For demonstration, we attempt an actual test run, falling back to mock if not configured
             # A real environment might run "npm test" or "pytest"
             returncode, stdout, stderr = self.sandbox.run_command(["npm", "test"])
@@ -64,7 +92,7 @@ class AgentTools:
                 "output": stdout,
                 "error": stderr
             })
-        except SandboxSecurityError as e:
+        except (SandboxSecurityError, PolicyViolationError) as e:
             return json.dumps({"error": str(e)})
         except FileNotFoundError:
             # Fallback for systems without npm installed during prototype testing

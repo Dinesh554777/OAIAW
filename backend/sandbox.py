@@ -3,6 +3,7 @@ import subprocess
 import shlex
 import time
 from typing import List, Optional, Tuple
+from policy import ControlledEnvironmentPolicy, PolicyViolationError
 
 class SandboxSecurityError(Exception):
     """Raised when a security violation occurs (e.g., path traversal, unauthorized command)."""
@@ -24,9 +25,13 @@ class SandboxExecutor:
         "cat"
     }
 
-    def __init__(self, workspace_dir: str, timeout_seconds: int = 10):
+    def __init__(self, workspace_dir: str, policy: ControlledEnvironmentPolicy = None, timeout_seconds: int = 10):
         self.workspace_dir = os.path.abspath(workspace_dir)
-        self.timeout_seconds = timeout_seconds
+        self.policy = policy
+        if self.policy and getattr(self.policy.policy, 'max_command_timeout_seconds', None):
+            self.timeout_seconds = self.policy.policy.max_command_timeout_seconds
+        else:
+            self.timeout_seconds = timeout_seconds
         
         if not os.path.exists(self.workspace_dir):
             os.makedirs(self.workspace_dir)
@@ -64,7 +69,14 @@ class SandboxExecutor:
             raise SandboxSecurityError("No command provided.")
             
         base_cmd = cmd_args[0]
-        if base_cmd not in self.ALLOWED_COMMANDS:
+        if self.policy and not getattr(self.policy.policy, 'allow_shell', False):
+            # Only allow predefined safe base commands if arbitrary shell is disabled
+            if base_cmd not in self.ALLOWED_COMMANDS:
+                if self.policy:
+                    self.policy._log_event("execute_tool", base_cmd, "DENIED", "Command not allowed without shell permissions.")
+                raise SandboxSecurityError(f"Command '{base_cmd}' is not allowed in this sandbox.")
+        elif base_cmd not in self.ALLOWED_COMMANDS:
+            # Always enforce ALLOWED_COMMANDS unless policy explicitly enables more (which it doesn't support here, but logic works)
             raise SandboxSecurityError(f"Command '{base_cmd}' is not allowed in this sandbox.")
             
         try:
@@ -77,7 +89,13 @@ class SandboxExecutor:
                 timeout=self.timeout_seconds,
                 shell=False
             )
-            return process.returncode, process.stdout, process.stderr
+            stdout = process.stdout
+            stderr = process.stderr
+            if self.policy:
+                stdout = self.policy.redact_secrets(stdout)
+                stderr = self.policy.redact_secrets(stderr)
+                
+            return process.returncode, stdout, stderr
         except subprocess.TimeoutExpired:
             raise SandboxSecurityError(f"Command execution exceeded timeout of {self.timeout_seconds} seconds.")
         except Exception as e:

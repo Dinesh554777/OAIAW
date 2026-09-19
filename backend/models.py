@@ -118,6 +118,15 @@ class ReportGeneratedBy(str, enum.Enum):
     ASSESSMENT_AI = "ASSESSMENT_AI"
     ASSESSOR = "ASSESSOR"
 
+class ClaimStatus(str, enum.Enum):
+    UNVERIFIED = "UNVERIFIED"
+    VERIFIED = "VERIFIED"
+    CONTRADICTED = "CONTRADICTED"
+
+class SecurityDecision(str, enum.Enum):
+    ALLOWED = "ALLOWED"
+    DENIED = "DENIED"
+
 class User(Base):
     __tablename__ = "users"
 
@@ -364,3 +373,78 @@ class ReportEvidence(Base):
 
     report = relationship("AssessmentReport", back_populates="report_evidence")
     evidence = relationship("Evidence")
+
+class EnvironmentPolicy(Base):
+    __tablename__ = "environment_policies"
+
+    id = Column(Integer, primary_key=True, index=True)
+    assessment_id = Column(Integer, ForeignKey("assessments.id"), index=True, nullable=False, unique=True)
+    
+    max_context_files = Column(Integer, default=20)
+    max_file_size_mb = Column(Integer, default=2)
+    max_search_results = Column(Integer, default=50)
+    max_context_tokens = Column(Integer, default=12000)
+    
+    network_enabled = Column(Boolean, default=False)
+    allow_external_web = Column(Boolean, default=False)
+    
+    max_command_timeout_seconds = Column(Integer, default=30)
+    max_cpu_cores = Column(Integer, default=2)
+    max_memory_mb = Column(Integer, default=1024)
+    
+    max_tool_calls_per_turn = Column(Integer, default=10)
+    max_agent_turns = Column(Integer, default=50)
+    max_patch_size_lines = Column(Integer, default=500)
+    
+    allow_file_read = Column(Boolean, default=True)
+    allow_file_write = Column(Boolean, default=True)
+    allow_file_delete = Column(Boolean, default=False)
+    allow_shell = Column(Boolean, default=False)
+    allow_test_execution = Column(Boolean, default=True)
+    allow_git = Column(Boolean, default=True)
+    
+    allow_score_access = Column(Boolean, default=False)
+    allow_hidden_test_access = Column(Boolean, default=False)
+    allow_secret_access = Column(Boolean, default=False)
+    allow_host_filesystem = Column(Boolean, default=False)
+
+    assessment = relationship("Assessment")
+
+class AIClaim(Base):
+    __tablename__ = "ai_claims"
+
+    id = Column(Integer, primary_key=True, index=True)
+    assessment_session_id = Column(Integer, ForeignKey("assessment_sessions.id"), index=True, nullable=False)
+    claim = Column(Text, nullable=False)
+    status = Column(SQLEnum(ClaimStatus), default=ClaimStatus.UNVERIFIED, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    verified_at = Column(DateTime(timezone=True), nullable=True)
+
+    assessment_session = relationship("AssessmentSession")
+    evidence = relationship("ClaimEvidence", back_populates="claim", cascade="all, delete-orphan")
+
+class ClaimEvidence(Base):
+    __tablename__ = "claim_evidence"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ai_claim_id = Column(Integer, ForeignKey("ai_claims.id"), index=True, nullable=False)
+    evidence_text = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    claim = relationship("AIClaim", back_populates="evidence")
+
+class SecurityEvent(Base):
+    __tablename__ = "security_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    assessment_session_id = Column(Integer, ForeignKey("assessment_sessions.id"), index=True, nullable=False)
+    actor = Column(String, nullable=False)
+    event_type = Column(String, nullable=False)
+    action = Column(String, nullable=False)
+    resource = Column(String, nullable=True)
+    decision = Column(SQLEnum(SecurityDecision), nullable=False)
+    reason = Column(Text, nullable=True)
+    timestamp = Column(DateTime(timezone=True), index=True, server_default=func.now())
+
+    assessment_session = relationship("AssessmentSession")
+

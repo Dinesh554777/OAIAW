@@ -81,19 +81,17 @@ export default function Workspace() {
   };
 
   return (
-    <div className="h-screen w-screen flex flex-col overflow-hidden bg-gray-900">
-      {/* Top Bar */}
+    <div className="h-screen w-screen flex flex-col overflow-hidden bg-background text-foreground font-sans">
       <WorkspaceHeader 
-        taskTitle="Implement React Hook" 
-        timeLeft="01:59:59" 
+        taskTitle="Implement Authentication Logic" 
+        timeLeft="01:42:15" 
         onSubmit={() => alert('Task submitted!')} 
       />
 
-      {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
         
         {/* Left Panel: File Explorer */}
-        <div className="w-64 flex-shrink-0 border-r border-gray-800">
+        <div className="w-64 flex-shrink-0">
           <FileExplorer 
             files={files} 
             activeFile={activeFile} 
@@ -108,22 +106,22 @@ export default function Workspace() {
               <CodeEditor 
                 activeFile={activeFile}
                 content={fileContents[activeFile] || ''}
-                language={activeFile.endsWith('.json') ? 'json' : 'javascript'}
+                language={activeFile.endsWith('.json') ? 'json' : activeFile.endsWith('.py') ? 'python' : 'javascript'}
                 onSave={handleSave}
               />
             ) : (
-              <div className="flex items-center justify-center h-full text-gray-500 bg-[#1e1e1e]">
+              <div className="flex items-center justify-center h-full text-muted-foreground bg-[#1e1e1e]">
                 Select a file to edit
               </div>
             )}
           </div>
-          <div className="h-64 flex-shrink-0 relative">
+          <div className="h-72 flex-shrink-0 relative">
             <TerminalPanel onRunTests={handleRunTests} />
           </div>
         </div>
 
         {/* Right Panel: AI Agent */}
-        <div className="w-80 flex-shrink-0">
+        <div className="w-96 flex-shrink-0">
           <AgentChat onSendMessage={handleAgentChat} />
         </div>
 

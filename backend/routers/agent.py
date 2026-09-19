@@ -8,6 +8,8 @@ from database import get_db
 from agent.tools import AgentTools
 from agent.orchestrator import mock_llm_orchestrator
 from git_integration import git_commit
+from policy import ControlledEnvironmentPolicy
+from claim_verifier import ClaimVerifier
 
 router = APIRouter(prefix="/agent", tags=["agent"])
 
@@ -62,10 +64,16 @@ def chat_with_agent(
     db.commit()
 
     workspace_dir = f"/tmp/workspace_{session.task_id}_{session.candidate_id}"
-    tools = AgentTools(workspace_dir)
+    policy = ControlledEnvironmentPolicy(db, session.id)
+    tools = AgentTools(workspace_dir, policy=policy)
 
     # Invoke Mock Orchestrator
     agent_response_text, tool_calls_data = mock_llm_orchestrator(request.message, tools)
+    
+    # Extract AI Claims
+    verifier = ClaimVerifier(db, session.id)
+    claims = verifier.extract_and_record_claims(agent_response_text)
+    
 
     agent_msg = models.AgentMessage(session_id=session.id, role=models.AgentRole.AGENT, content=agent_response_text)
     db.add(agent_msg)
@@ -106,6 +114,8 @@ def chat_with_agent(
             )
         )
     db.commit()
+    # Verify Claims against the collected tool calls
+    verifier.verify_claims_against_tools(claims, tool_calls_data)
 
     if made_changes:
         git_commit(workspace_dir, "AI Agent made code changes", "AI Agent", "agent@oaiaw.com")
