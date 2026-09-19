@@ -1,5 +1,8 @@
 import { Folder, FileCode, ChevronDown, ChevronRight, Search, FileJson, FileText, File } from 'lucide-react';
 import { useState } from 'react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function FileExplorer({ files, activeFile, onFileSelect }: { files: any, activeFile: string, onFileSelect: (path: string) => void }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({ 'src': true, 'tests': true });
@@ -56,18 +59,20 @@ export default function FileExplorer({ files, activeFile, onFileSelect }: { file
       <div className="p-2 border-b border-border bg-surface/50">
         <div className="relative group">
           <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-accent transition-colors" />
-          <input type="text" placeholder="Search files..." className="w-full bg-surface-elevated border border-transparent focus:border-border text-xs rounded pl-8 py-1.5 text-foreground placeholder:text-muted-foreground focus:outline-none transition-all shadow-sm" />
+          <Input type="text" placeholder="Search files..." className="w-full bg-surface-elevated pl-8 h-8 text-xs shadow-sm" />
         </div>
       </div>
-      <div className="flex-1 overflow-auto py-2 custom-scrollbar">
-        {files ? renderTree(files) : (
-          <div className="p-4 flex flex-col gap-2">
-             <div className="w-full h-4 bg-surface-elevated animate-pulse rounded"></div>
-             <div className="w-3/4 h-4 bg-surface-elevated animate-pulse rounded ml-4"></div>
-             <div className="w-5/6 h-4 bg-surface-elevated animate-pulse rounded ml-4"></div>
-          </div>
-        )}
-      </div>
+      <ScrollArea className="flex-1">
+        <div className="py-2">
+          {files ? renderTree(files) : (
+            <div className="p-4 flex flex-col gap-2">
+               <Skeleton className="w-full h-4 rounded" />
+               <Skeleton className="w-3/4 h-4 rounded ml-4" />
+               <Skeleton className="w-5/6 h-4 rounded ml-4" />
+            </div>
+          )}
+        </div>
+      </ScrollArea>
     </div>
   );
 }

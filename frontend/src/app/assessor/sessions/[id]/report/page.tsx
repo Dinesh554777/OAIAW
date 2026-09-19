@@ -1,21 +1,22 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
+import { fetchApi } from '@/lib/api';
 
 export default function AssessmentReportPage() {
   const params = useParams();
-  const router = useRouter();
+
   const sessionId = params.id as string;
   
-  const [report, setReport] = useState<any>(null);
+  const [report, setReport] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'timeline' | 'diff' | 'ai'>('timeline');
+  const [generatingAI, setGeneratingAI] = useState(false);
 
   useEffect(() => {
     async function loadReport() {
       try {
-        const data = await api.get(`/sessions/${sessionId}/report`);
+        const data = await fetchApi(`/sessions/${sessionId}/report`);
         setReport(data);
       } catch (err) {
         console.error(err);
@@ -29,14 +30,12 @@ export default function AssessmentReportPage() {
   if (loading) return <div className="p-8 text-white">Loading report...</div>;
   if (!report) return <div className="p-8 text-red-400">Failed to load report.</div>;
 
-  const { session, evaluation, evidence, events, git_history, git_diff, messages, ai_summary } = report;
-
-  const [generatingAI, setGeneratingAI] = useState(false);
+  const { session, evaluation, evidence, events, git_diff, messages, ai_summary } = report as any;
 
   const handleGenerateAI = async () => {
     setGeneratingAI(true);
     try {
-      const data = await api.post(`/sessions/${sessionId}/generate-ai-summary`);
+      const data = await fetchApi(`/sessions/${sessionId}/generate-ai-summary`, { method: 'POST' });
       setReport({ ...report, ai_summary: data });
     } catch (err) {
       console.error(err);

@@ -1,6 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, CheckCircle2, AlertTriangle, FileCode2, Terminal, AlertCircle } from 'lucide-react';
-import { Badge } from '../common/Badge';
+import { Send, CheckCircle2, AlertTriangle, FileCode2, Terminal } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card, CardContent } from '@/components/ui/card';
+import { AIBadge } from '@/components/ui/status-badge';
 
 interface Message {
   sender: 'user' | 'agent';
@@ -39,7 +43,7 @@ export default function AgentChat({ onSendMessage }: { onSendMessage: (msg: stri
 
       const response = await onSendMessage(userMsg);
       
-      const newMessages = [];
+      const newMessages: Message[] = [];
       if (toolActivity.length > 0) {
         newMessages.push({ sender: 'agent' as const, text: '', type: 'tool' as const, toolActivity });
       }
@@ -56,7 +60,7 @@ export default function AgentChat({ onSendMessage }: { onSendMessage: (msg: stri
       }
 
       setMessages(prev => [...prev, ...newMessages]);
-    } catch (e) {
+    } catch (e: unknown) {
       setMessages(prev => [...prev, { sender: 'agent', text: 'Error connecting to isolated agent environment.' }]);
     } finally {
       setLoading(false);
@@ -65,67 +69,71 @@ export default function AgentChat({ onSendMessage }: { onSendMessage: (msg: stri
 
   return (
     <div className="h-full flex flex-col bg-surface shadow-sm">
-      <div className="flex-1 overflow-auto p-4 space-y-5 custom-scrollbar">
-        {messages.map((msg, idx) => (
-          <div key={idx} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
-            {msg.type === 'tool' && msg.toolActivity && (
-              <div className="w-full max-w-[90%] mb-2 space-y-1">
-                {msg.toolActivity.map((tool, i) => (
-                  <div key={i} className="flex items-center gap-2 text-xs font-mono text-muted-foreground bg-surface-elevated p-1.5 rounded border border-border">
-                    {tool.status === 'success' && <CheckCircle2 size={12} className="text-success" />}
-                    {tool.status === 'denied' && <AlertTriangle size={12} className="text-error" />}
-                    <span>{tool.tool}({tool.args})</span>
-                  </div>
-                ))}
-              </div>
-            )}
+      <ScrollArea className="flex-1 p-4">
+        <div className="space-y-5">
+          {messages.map((msg, idx) => (
+            <div key={idx} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
+              {msg.type === 'tool' && msg.toolActivity && (
+                <div className="w-full max-w-[90%] mb-2 space-y-1">
+                  {msg.toolActivity.map((tool, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xs font-mono text-muted-foreground bg-surface-elevated p-1.5 rounded border border-border">
+                      {tool.status === 'success' && <CheckCircle2 size={12} className="text-success" />}
+                      {tool.status === 'denied' && <AlertTriangle size={12} className="text-error" />}
+                      <span>{tool.tool}({tool.args})</span>
+                    </div>
+                  ))}
+                </div>
+              )}
 
-            {msg.type === 'claim' && (
-              <div className="w-full max-w-[95%] mb-2 border rounded-xl p-4 bg-surface-elevated border-border shadow-sm">
-                <div className="text-[10px] font-bold text-muted-foreground mb-1.5 uppercase tracking-wider">AI Claim</div>
-                <div className="text-sm font-medium mb-4 text-foreground">"{msg.text}"</div>
-                {msg.claimStatus === 'UNVERIFIED' && <Badge variant="warning" className="flex w-fit items-center gap-1.5"><AlertCircle size={12}/> UNVERIFIED</Badge>}
-                {msg.claimStatus === 'VERIFIED' && <Badge variant="success" className="flex w-fit items-center gap-1.5"><CheckCircle2 size={12}/> VERIFIED BY TESTS</Badge>}
-                {msg.claimStatus === 'CONTRADICTED' && <Badge variant="destructive" className="flex w-fit items-center gap-1.5"><AlertTriangle size={12}/> CONTRADICTED BY TESTS</Badge>}
-              </div>
-            )}
+              {msg.type === 'claim' && (
+                <Card className="w-full max-w-[95%] mb-2 bg-surface-elevated">
+                  <CardContent className="p-4">
+                    <div className="text-[10px] font-bold text-muted-foreground mb-1.5 uppercase tracking-wider">AI Claim</div>
+                    <div className="text-sm font-medium mb-4 text-foreground">&quot;{msg.text}&quot;</div>
+                    {msg.claimStatus === 'UNVERIFIED' && <AIBadge status="UNVERIFIED" />}
+                    {msg.claimStatus === 'VERIFIED' && <AIBadge status="VERIFIED" />}
+                    {msg.claimStatus === 'CONTRADICTED' && <AIBadge status="CONTRADICTED" />}
+                  </CardContent>
+                </Card>
+              )}
 
-            {!msg.type && (
-              <div className={`max-w-[85%] rounded-2xl p-3.5 text-sm shadow-sm ${msg.sender === 'user' ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-surface-elevated text-foreground border border-border rounded-bl-sm'}`}>
-                {msg.text}
-              </div>
-            )}
-          </div>
-        ))}
-        {loading && (
-          <div className="flex justify-start">
-            <div className="bg-surface-elevated border border-border text-muted-foreground rounded-2xl rounded-bl-sm p-3.5 text-sm flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-ai animate-pulse"></span>
-              <span className="w-1.5 h-1.5 rounded-full bg-ai animate-pulse delay-75"></span>
-              <span className="w-1.5 h-1.5 rounded-full bg-ai animate-pulse delay-150"></span>
+              {!msg.type && (
+                <div className={`max-w-[85%] rounded-2xl p-3.5 text-sm shadow-sm ${msg.sender === 'user' ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-surface-elevated text-foreground border border-border rounded-bl-sm'}`}>
+                  {msg.text}
+                </div>
+              )}
             </div>
-          </div>
-        )}
-        <div ref={endRef} />
-      </div>
+          ))}
+          {loading && (
+            <div className="flex justify-start">
+              <div className="bg-surface-elevated border border-border text-muted-foreground rounded-2xl rounded-bl-sm p-3.5 text-sm flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-ai animate-pulse"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-ai animate-pulse delay-75"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-ai animate-pulse delay-150"></span>
+              </div>
+            </div>
+          )}
+          <div ref={endRef} />
+        </div>
+      </ScrollArea>
 
       <div className="p-4 bg-surface border-t border-border">
         <div className="relative flex items-center group">
-          <input 
-            type="text" 
+          <Input 
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSend()}
             placeholder="Ask AI to investigate or propose a patch..." 
-            className="w-full bg-surface-elevated border border-transparent focus:border-border rounded-full pl-4 pr-12 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none transition-shadow shadow-sm"
+            className="w-full rounded-full pl-4 pr-12 h-10 shadow-sm bg-surface-elevated"
           />
-          <button 
+          <Button 
+            size="icon"
             onClick={handleSend}
             disabled={!input.trim() || loading}
-            className="absolute right-1.5 p-1.5 text-primary bg-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:bg-surface-elevated disabled:text-muted-foreground rounded-full transition-all"
+            className="absolute right-1 h-8 w-8 rounded-full"
           >
             <Send size={14} />
-          </button>
+          </Button>
         </div>
         <div className="flex justify-between mt-3 px-2">
            <span className="text-[10px] text-muted-foreground flex gap-1.5 items-center font-medium uppercase tracking-wider"><FileCode2 size={12} className="text-ai/70"/> Reads Workspace</span>

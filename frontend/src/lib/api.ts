@@ -4,9 +4,9 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost
 
 export async function fetchApi(endpoint: string, options: RequestInit = {}) {
   const token = Cookies.get('token');
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...options.headers,
+    ...(options.headers as Record<string, string>),
   };
   
   if (token) {

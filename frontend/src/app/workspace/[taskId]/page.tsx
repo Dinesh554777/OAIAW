@@ -15,7 +15,7 @@ export default function Workspace() {
   const params = useParams();
   const taskId = params.taskId as string;
   
-  const [files, setFiles] = useState<any>(null);
+  const [files, setFiles] = useState<Record<string, any> | null>(null);
   const [activeFile, setActiveFile] = useState<string>('');
   const [fileContents, setFileContents] = useState<Record<string, string>>({});
   const [agentSessionId, setAgentSessionId] = useState<number | null>(null);
@@ -30,14 +30,14 @@ export default function Workspace() {
     fetchApi(`/workspace/${taskId}/files`)
       .then(res => {
         setFiles(res);
-        const flatten = (node: any, path = '') => {
-          let result: any = {};
-          for (let key in node) {
+        const flatten = (node: Record<string, any>, path = '') => {
+          const result: Record<string, string> = {};
+          for (const key in node) {
             const curPath = path ? `${path}/${key}` : key;
-            if (typeof node[key] === 'object') {
+            if (typeof node[key] === 'object' && node[key] !== null) {
               Object.assign(result, flatten(node[key], curPath));
             } else {
-              result[curPath] = node[key];
+              result[curPath] = String(node[key]);
             }
           }
           return result;
@@ -63,7 +63,7 @@ export default function Workspace() {
     try {
       const res = await fetchApi(`/workspace/${taskId}/run-tests`, { method: 'POST' });
       return JSON.parse(res.payload).output || 'Tests finished.';
-    } catch (e) {
+    } catch (e: unknown) {
       return 'Test execution failed.';
     }
   };
@@ -76,7 +76,7 @@ export default function Workspace() {
         body: JSON.stringify({ session_id: agentSessionId, message: msg })
       });
       return res.response;
-    } catch (e) {
+    } catch (e: unknown) {
       return 'Agent encountered an error.';
     }
   };

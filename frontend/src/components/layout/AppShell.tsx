@@ -1,7 +1,8 @@
+'use client';
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Users, Shield, FileCode2, History, Settings, LogOut, PanelLeft, Menu } from "lucide-react"
+import { LayoutDashboard, Users, Shield, FileCode2, History, Settings, LogOut, PanelLeft } from "lucide-react"
 
 interface AppShellProps {
   children: React.ReactNode

@@ -1,9 +1,9 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { fetchApi } from '@/lib/api';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/common/Card';
-import { Button } from '@/components/common/Button';
-import { Badge } from '@/components/common/Badge';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { AppShell } from '@/components/layout/AppShell';
 import { Clock, Code2, ArrowRight, Play, Activity } from 'lucide-react';
 

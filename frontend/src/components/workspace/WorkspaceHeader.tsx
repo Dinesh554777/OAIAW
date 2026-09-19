@@ -1,6 +1,6 @@
 import { Play, CheckCircle, Clock } from 'lucide-react';
 import Link from 'next/link';
-import { Button } from '../common/Button';
+import { Button } from '@/components/ui/button';
 
 export default function WorkspaceHeader({ taskTitle, timeLeft, onSubmit }: { taskTitle: string, timeLeft: string, onSubmit: () => void }) {
   const steps = ['UNDERSTAND', 'PLAN', 'BUILD', 'AI ASSIST', 'VERIFY', 'TEST', 'REFINE'];

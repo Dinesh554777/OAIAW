@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { AppShell } from '@/components/layout/AppShell';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/common/Card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { MetricCard } from '@/components/dashboard/metric-card';
 import { Users, FileCode2, Activity, ShieldAlert } from 'lucide-react';
 
 export default function AssessorDashboard() {
@@ -14,49 +15,38 @@ export default function AssessorDashboard() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Active Assessments</CardTitle>
-                <FileCode2 size={16} className="text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">12</div>
-                <p className="text-xs text-muted-foreground mt-1">+2 from last week</p>
-              </CardContent>
-            </Card>
+            <MetricCard
+              title="Active Assessments"
+              value={12}
+              description="+2 from last week"
+              icon={FileCode2}
+              trend="up"
+            />
             
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Candidates Pending</CardTitle>
-                <Users size={16} className="text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">24</div>
-                <p className="text-xs text-muted-foreground mt-1">Requires manual review</p>
-              </CardContent>
-            </Card>
+            <MetricCard
+              title="Candidates Pending"
+              value={24}
+              description="Requires manual review"
+              icon={Users}
+              status="warning"
+            />
             
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">AI Verification Rate</CardTitle>
-                <Activity size={16} className="text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">87%</div>
-                <p className="text-xs text-muted-foreground mt-1">Of AI claims verified</p>
-              </CardContent>
-            </Card>
+            <MetricCard
+              title="AI Verification Rate"
+              value="87%"
+              description="Of AI claims verified"
+              icon={Activity}
+              status="success"
+            />
 
-            <Card className="border-error/20 bg-error/5">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-error">Security Events</CardTitle>
-                <ShieldAlert size={16} className="text-error" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-error">3</div>
-                <p className="text-xs text-error/80 mt-1">Blocked actions today</p>
-              </CardContent>
-            </Card>
+            <MetricCard
+              title="Security Events"
+              value={3}
+              description="Blocked actions today"
+              icon={ShieldAlert}
+              status="error"
+              trend="down"
+            />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
